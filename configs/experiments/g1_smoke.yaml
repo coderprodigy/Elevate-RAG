@@ -1,0 +1,5 @@
+description: Gate G1 smoke test. V0 closed-book on 20 dev questions per dataset (harness end to end).
+frozen: false
+split: dev
+limit: 20
+base: {pipeline: v0, model: claude-haiku-5-5}

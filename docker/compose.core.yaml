@@ -1,0 +1,26 @@
+# Reference databases: Qdrant (vectors) + Neo4j (graph).
+x-limits: &limits
+  deploy:
+    resources:
+      limits: {cpus: "${HGRAG_DB_CPUS:-4}", memory: "${HGRAG_DB_MEM:-4g}"}
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    container_name: hgrag-qdrant
+    ports: ["127.0.0.1:6333:6333", "127.0.0.1:6334:6334"]
+    volumes: ["qdrant_data:/qdrant/storage"]
+    <<: *limits
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: hgrag-neo4j
+    ports: ["127.0.0.1:7474:7474", "127.0.0.1:7687:7687"]
+    environment:
+      NEO4J_AUTH: "neo4j/${NEO4J_PASSWORD:-hgrag-dev-password}"
+      NEO4J_server_memory_heap_max__size: "2g"
+    volumes: ["neo4j_data:/data"]
+    <<: *limits
+
+volumes:
+  qdrant_data:
+  neo4j_data:

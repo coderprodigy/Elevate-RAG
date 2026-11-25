@@ -1,0 +1,10 @@
+description: >
+  E5 / RQ5. One factor at a time from the reference (strong open embedder, open reranker,
+  cheap API extractor, mid open generator). Model keys ending in @waterloo are added to
+  configs/models.yaml on day 4; until then those arms show as blocked in `hgrag exp plan`.
+frozen: false
+split: dev
+base: {pipeline: v4}
+vary:
+  embedder: [bge-small]
+  model: [gemma-4-12b@waterloo, claude-sonnet-5-5]

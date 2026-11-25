@@ -1,0 +1,5 @@
+# Spending caps in USD, enforced by hgrag.llm.budget.BudgetGuard before every paid call.
+# PLACEHOLDER VALUES: the team must agree real caps (docs/setup/02_accounts_api_keys_and_models.md §4).
+global_cap_usd: 200.0        # total across all runs recorded in the ledger
+per_run_cap_usd: 25.0        # a single run stops (resumable) when it reaches this
+confirm_above_usd: 2.0       # runs estimated above this need an explicit yes after --dry-run

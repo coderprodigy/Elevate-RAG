@@ -1,0 +1,7 @@
+description: E5 / RQ5 extraction LLM comparison (re-indexing is expensive, so two datasets only).
+frozen: false
+split: dev
+datasets: [multihop_rag, graphrag_bench_medical]
+base: {pipeline: lr_local}
+vary:
+  extractor: [claude-sonnet-5-5, qwen3.6-35b-a3b@waterloo]

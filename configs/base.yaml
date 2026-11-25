@@ -1,0 +1,12 @@
+# Base configuration shared by every experiment. Experiment files override fields from here.
+seed: 750
+
+paths:                       # relative paths resolve against the project root
+  data_dir: data
+  runs_dir: runs
+  cache_db: runs/cache/llm_responses.sqlite
+  ledger_db: runs/usage.sqlite
+
+generation:
+  temperature: 0.0           # applied only to models with supports_temperature: true
+  max_tokens: 1024

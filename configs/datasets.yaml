@@ -1,0 +1,39 @@
+# Per-dataset build settings. Sampling uses the global `seed` from base.yaml.
+# Changing a sample size after splits are frozen makes `hgrag data build` fail on purpose.
+
+nq:
+  source_url: https://github.com/facebookresearch/DPR (biencoder-nq-dev)
+  license: CC BY-SA 3.0 (Natural Questions); check DPR terms for the processed file
+  sample_size: 500
+  max_distractors_per_question: 10   # DPR hard negatives kept per question (keeps indexing cost sane)
+
+hotpotqa:
+  source_url: https://huggingface.co/datasets/hotpotqa/hotpot_qa (distractor, validation)
+  license: CC BY-SA 4.0
+  sample_size: 1000                  # every dev question is level "hard"
+
+musique:
+  source_url: https://github.com/StonyBrookNLP/musique (via HF mirror bdsaglam/musique)
+  license: CC BY 4.0
+  sample_size: 500                   # answerable
+  unanswerable_sample_size: 100
+
+multihop_rag:
+  source_url: https://huggingface.co/datasets/yixuantt/MultiHopRAG
+  license: see source (check before redistribution)
+  sample_size: null                  # full query set (2,556)
+
+graphrag_bench_novel:
+  source_url: https://huggingface.co/datasets/GraphRAG-Bench/GraphRAG-Bench
+  license: see source (check before redistribution)
+  sample_size: null
+
+graphrag_bench_medical:
+  source_url: https://huggingface.co/datasets/GraphRAG-Bench/GraphRAG-Bench
+  license: see source (check before redistribution)
+  sample_size: null
+
+ragrouter_bench:                     # router training/evaluation only (no corpus)
+  source_url: https://huggingface.co/datasets/Chaplain0908/RAGRouter
+  license: MIT
+  sample_size: null

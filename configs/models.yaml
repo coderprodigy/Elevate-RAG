@@ -1,0 +1,63 @@
+# Model registry: providers, frozen model specs with prices, and the role → model mapping.
+# After the week-1 freeze, never edit a model entry in place. Add a new key and point the role at it.
+# Prices are USD per million tokens (MTok).
+
+providers:
+  anthropic:
+    kind: anthropic
+    api_key_env: ANTHROPIC_API_KEY
+  openai:
+    kind: openai_compat
+    api_key_env: OPENAI_API_KEY
+    max_tokens_field: max_completion_tokens
+  openrouter:
+    kind: openai_compat
+    api_key_env: OPENROUTER_API_KEY
+    base_url: https://openrouter.ai/api/v1
+  waterloo_vllm:              # vLLM on the Waterloo GPU server, via SSH tunnel
+    kind: openai_compat
+    api_key_env: VLLM_API_KEY
+    base_url_env: VLLM_BASE_URL
+  fake:                       # offline, deterministic; used by unit tests and dry runs
+    kind: fake
+
+models:
+  claude-haiku-5-5:
+    provider: anthropic
+    model: claude-haiku-5-5
+    supports_temperature: false     # Claude 5.5 models reject non-default sampling params
+    # List price for prompts up to 100K tokens (higher above that; our prompts stay well below).
+    price: {input_per_mtok: 0.10, output_per_mtok: 0.50}
+    params:
+      thinking: {type: disabled}    # allowed on Haiku 5.5 at effort high or below
+      output_config: {effort: low}
+
+  claude-sonnet-5-5:
+    provider: anthropic
+    model: claude-sonnet-5-5
+    supports_temperature: false
+    price: {input_per_mtok: 2.00, output_per_mtok: 10.00, cached_input_per_mtok: 0.10}
+    params:
+      thinking: {type: between_tools}   # Sonnet 5.5's "thinking off" setting (effort <= high)
+      output_config: {effort: low}
+
+  # Open-weight models are added on day 4, once the Waterloo server is up. Template:
+  # qwen3.6-35b-a3b@waterloo:
+  #   provider: waterloo_vllm
+  #   model: generator-mid          # --served-model-name given to vLLM
+  #   price: {input_per_mtok: 0.0, output_per_mtok: 0.0}
+  #   params: {}
+
+  fake-small:
+    provider: fake
+    model: fake-small
+    price: {input_per_mtok: 1.00, output_per_mtok: 2.00}
+
+roles:
+  smoke: claude-haiku-5-5           # `hgrag llm ping`
+  extractor: claude-haiku-5-5       # reference graph extractor (cheap API tier)
+  keywords: claude-haiku-5-5        # LightRAG keyword extraction
+  router_llm: claude-haiku-5-5      # R3 router
+  generator_strong: claude-sonnet-5-5
+  generator: null                   # reference = mid open model on Waterloo vLLM (set on day 4)
+  judge: null                       # GPT or Gemini family, set at the model freeze

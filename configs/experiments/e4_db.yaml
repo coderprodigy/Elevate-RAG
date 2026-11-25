@@ -1,0 +1,8 @@
+description: E4 / RQ4 Level B. Same graph pipeline on different LightRAG storage backends (fixed 300 questions).
+frozen: false
+split: dev
+limit: 300
+datasets: [multihop_rag, hotpotqa]
+base: {pipeline: lr_local, graph_backend: local}
+vary:
+  graph_backend: [qdrant_neo4j, milvus_memgraph, postgres]

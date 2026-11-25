@@ -1,0 +1,8 @@
+description: E6 / RQ5 interaction. Retrieval mode x generator size (does graph context help small generators more?).
+frozen: false
+split: dev
+datasets: [hotpotqa, musique, graphrag_bench_novel, graphrag_bench_medical]
+base: {pipeline: v4}
+grid:
+  pipeline: [v4, lr_local, lr_mix]
+  model: [gemma-4-12b@waterloo, qwen3.6-35b-a3b@waterloo, claude-sonnet-5-5]

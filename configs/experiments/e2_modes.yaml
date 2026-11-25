@@ -1,0 +1,9 @@
+description: >
+  E2 / RQ2. Retrieval modes on the same chunks: V4 vs LightRAG naive/local/global/hybrid/mix.
+  Run on dev AND test: the dev runs provide the router's outcome labels (E3).
+frozen: false   # set true at gate G3
+split: dev
+base: {pipeline: v4}
+vary:
+  pipeline: [lr_naive, lr_local, lr_global, lr_hybrid, lr_mix]
+# E3 (router) needs no runs of its own: hgrag router evaluate --experiment e2_modes

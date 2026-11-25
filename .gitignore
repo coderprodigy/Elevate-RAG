@@ -1,0 +1,32 @@
+# secrets
+.env
+
+# data and outputs (large, regenerable)
+# Frozen splits ARE tracked so the whole team evaluates on identical dev/test questions.
+data/raw/
+data/processed/*/*
+!data/processed/*/splits.json
+# Rebuilt with `hgrag index build` (embeddings, BM25, FAISS)
+data/indexes/
+# Rebuilt with `hgrag graph build` (costs API money: never delete casually)
+data/graphs/
+runs/
+server_probe.txt
+# Machine-specific benchmark timings (regenerate on the server)
+reports/bench/*.json
+
+# python
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# os / editors
+.DS_Store
+.idea/
+.vscode/

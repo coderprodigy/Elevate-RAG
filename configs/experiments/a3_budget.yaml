@@ -1,0 +1,7 @@
+description: A3 ablation. Context-token budget 4k / 8k / 16k for the fused graph mode (isolates "more context" from "better structure").
+frozen: false
+split: dev
+datasets: [multihop_rag]
+base: {pipeline: lr_mix}
+vary:
+  context_token_budget: [4000, 16000]

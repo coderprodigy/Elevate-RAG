@@ -1,0 +1,48 @@
+# Graph RAG layer (Phase 4): LightRAG over our chunks. Graphs live in
+# data/graphs/<dataset>/<chunker>/<extractor>[-sample]/<backend>/
+
+reference_backend: local
+backends:                          # LightRAG storage classes (Level B database swap, Phase 6)
+  local:                           # no services needed; reference for Phases 4-5
+    kv_storage: JsonKVStorage
+    vector_storage: NanoVectorDBStorage
+    graph_storage: NetworkXStorage
+    doc_status_storage: JsonDocStatusStorage
+  faiss:
+    kv_storage: JsonKVStorage
+    vector_storage: FaissVectorDBStorage
+    graph_storage: NetworkXStorage
+    doc_status_storage: JsonDocStatusStorage
+  qdrant_neo4j:                    # reference DB pair from the design (needs docker/compose.core.yaml)
+    kv_storage: JsonKVStorage
+    vector_storage: QdrantVectorDBStorage
+    graph_storage: Neo4JStorage
+    doc_status_storage: JsonDocStatusStorage
+  milvus_memgraph:
+    kv_storage: JsonKVStorage
+    vector_storage: MilvusVectorDBStorage
+    graph_storage: MemgraphStorage
+    doc_status_storage: JsonDocStatusStorage
+  postgres:                        # one database for everything (pgvector + AGE graph)
+    kv_storage: PGKVStorage
+    vector_storage: PGVectorStorage
+    graph_storage: PGGraphStorage
+    doc_status_storage: PGDocStatusStorage
+
+extraction:
+  max_gleaning: 1                  # extra "did you miss anything?" pass per chunk (LightRAG default)
+  llm_max_async: 8                 # parallel extraction calls
+  embedding_max_async: 1           # local embedder on one GPU: keep 1
+  sample_fraction: 0.05            # `graph estimate`: share of chunks indexed to measure cost
+  # Upper bounds per chunk for the dry-run estimate before the sample is measured:
+  est_input_tokens_per_chunk: 4000
+  est_output_tokens_per_chunk: 1500
+
+query:
+  top_k: 40                        # entities / relations retrieved
+  chunk_top_k: 20                  # chunks retrieved before our reranker
+  entity_token_share: 0.25         # of the shared context budget (configs/retrieval.yaml)
+  relation_token_share: 0.25
+  rerank_chunks: true              # same cross-encoder as V4 (all paths share the reranker)
+  est_keyword_input_tokens: 2000   # keyword-extraction call per query (dry-run bound)
+  est_keyword_output_tokens: 300

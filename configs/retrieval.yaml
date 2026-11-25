@@ -1,0 +1,49 @@
+# Retrieval stack (Phase 3). Index layout: data/indexes/<dataset>/<chunker>/...
+# "Tokens" here are tiktoken cl100k_base tokens: one fixed unit for chunk sizes and context budgets.
+
+chunkers:
+  sent512:  {kind: sentence, max_tokens: 512, overlap_tokens: 64}     # default for long documents
+  sent256:  {kind: sentence, max_tokens: 256, overlap_tokens: 32}     # ablation A1
+  sent1024: {kind: sentence, max_tokens: 1024, overlap_tokens: 128}   # ablation A1
+  para:     {kind: paragraph, max_tokens: 512, overlap_tokens: 64}    # one chunk per paragraph/passage
+
+# Default chunker per dataset: Wikipedia datasets keep their gold paragraphs whole.
+dataset_chunker:
+  nq: para
+  hotpotqa: para
+  musique: para
+  multihop_rag: sent512
+  graphrag_bench_novel: sent512
+  graphrag_bench_medical: sent512
+
+embedders:
+  bge-small:                                  # small open tier; fast for development
+    model: BAAI/bge-small-en-v1.5
+    query_prefix: "Represent this sentence for searching relevant passages: "
+    batch_size: 64
+    max_seq_length: 512
+  qwen3-emb-0.6b:                             # strong open tier = reference embedder
+    model: Qwen/Qwen3-Embedding-0.6B
+    query_prompt_name: query                  # model's built-in retrieval instruction
+    batch_size: 16
+    max_seq_length: 1024
+reference_embedder: qwen3-emb-0.6b
+
+rerankers:
+  bge-reranker-v2-m3:                         # open tier = reference reranker
+    model: BAAI/bge-reranker-v2-m3
+    batch_size: 16
+    max_length: 512
+reference_reranker: bge-reranker-v2-m3
+
+hnsw:                                         # fixed across systems (plan Phase 1, step 4)
+  m: 32
+  ef_construction: 200
+  ef_search: 128
+
+search:
+  candidates: 50              # retrieved per retriever before fusion / reranking
+  rrf_k: 60                   # reciprocal rank fusion constant
+  rerank_candidates: 50       # top fused candidates the cross-encoder scores (plan: all 50)
+  final_k: 8                  # passages given to the generator (after reranking if any)
+  context_token_budget: 8000  # same cap for every retrieval path (decision D4)

@@ -1,0 +1,24 @@
+# Extra graph stores for E4. Memgraph speaks Bolt (same client as Neo4j); Postgres+AGE is what
+# LightRAG's PGGraphStorage expects.
+x-limits: &limits
+  deploy:
+    resources:
+      limits: {cpus: "${HGRAG_DB_CPUS:-4}", memory: "${HGRAG_DB_MEM:-4g}"}
+
+services:
+  memgraph:
+    profiles: [memgraph]
+    image: memgraph/memgraph:2.21.0
+    container_name: hgrag-memgraph
+    ports: ["127.0.0.1:7688:7687"]
+    <<: *limits
+  postgres-age:
+    profiles: [postgres]
+    image: apache/age:release_PG16_1.5.0
+    container_name: hgrag-postgres-age
+    environment:
+      POSTGRES_USER: hgrag
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-hgrag-dev-password}"
+      POSTGRES_DB: hgrag
+    ports: ["127.0.0.1:5433:5432"]
+    <<: *limits

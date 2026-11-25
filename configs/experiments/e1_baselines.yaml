@@ -1,0 +1,6 @@
+description: E1 / RQ1. Vector baselines V0-V4 on all five datasets (V4 = reference vector baseline).
+frozen: false   # set true at gate G2 (V4 tuned on dev), which unlocks the test split
+split: dev
+base: {pipeline: v4}
+vary:
+  pipeline: [v0, v1, v2, v3]

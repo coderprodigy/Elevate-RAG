@@ -1,0 +1,7 @@
+description: A1 ablation. Chunk size 256 / 512 / 1024 tokens (V4 on MultiHop-RAG; needs `hgrag index build --chunker sent256` etc.).
+frozen: false
+split: dev
+datasets: [multihop_rag]
+base: {pipeline: v4}
+vary:
+  chunker: [sent256, sent1024]

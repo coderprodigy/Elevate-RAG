@@ -1,0 +1,36 @@
+# Router (Phase 5 / E3). Routers choose a retrieval *path* per question. Each path's answers come
+# from that pipeline's runs in the per-mode experiment (E2), so routing is evaluated offline at
+# zero extra cost; only R3 (LLM classifier) makes new calls.
+
+paths:                    # path → pipeline whose run supplies its answers
+  naive: v4               # strong vector baseline
+  local: lr_local
+  global: lr_global
+  mix: lr_mix             # "always fuse" baseline; tokens-saved is measured against it
+baseline_path: mix
+
+type_to_path:             # query type → path, for type-predicting routers (R1-R3)
+  single_hop: naive
+  multi_hop: local
+  comparison: local
+  temporal: local
+  global: global
+  creative: global
+  unanswerable: naive
+
+rules:                    # R1: first match wins, in this order
+  global_patterns: ["overall", "main theme", "themes", "summar", "across the", "in general", "what are the key", "broadly", "overview"]
+  comparison_patterns: ["compare", "both", "which is older", "which one", "which came first", "difference between", "more than", "less than", "same nationality", " or the "]
+  temporal_patterns: ["before", "after", "earlier", "later", "how many years", "what year", "when did", "first"]
+  multi_hop_min_entities: 2    # ≥ this many capitalised names → multi_hop
+
+classifier:
+  max_features: 20000
+  ngram_range: [1, 2]
+  c: 1.0
+  cv_folds: 5
+
+fallback:                 # R4: cheap path first, escalate when unsure
+  cheap_path: naive
+  escalate_path: mix
+  thresholds: [-6.0, -4.0, -2.0, -1.0, 0.0, 1.0, 2.0, 4.0]   # top rerank score below → escalate; tuned on dev
