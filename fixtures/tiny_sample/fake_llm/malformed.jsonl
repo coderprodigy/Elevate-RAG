@@ -1,0 +1,4 @@
+{"description": "Truncated output: wrong tuple delimiter and no completion marker.", "doc_id": "tiny-doc-03", "response": "entity<|>Quellmoor University<|>Organization\nrelation<|#|>Quellmoor", "role": "extraction"}
+{"description": "Not JSON and no valid label; must be recorded as unjudged.", "question_id": "tiny-q01", "response": "The answer looks fine to me, probably right?", "role": "judge"}
+{"description": "Valid JSON with a label outside {correct, partial, wrong}.", "question_id": "tiny-q02", "response": "{\"label\": \"mostly-right\", \"rationale\": \"Close enough.\"}", "role": "judge"}
+{"description": "Cites passage 99, which is never in the context; record as invalid.", "question_id": "tiny-q03", "response": "Caspar Orrex [99]", "role": "generation"}

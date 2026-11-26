@@ -1,0 +1,34 @@
+# PostgreSQL graph-tables store (nodes/edges tables, recursive CTE traversal)
+# (Requirement 2.4, 26.3).
+# Usage: docker compose -f docker/postgres-graph.yml --env-file .env up -d
+# Client setting: POSTGRES_GRAPH_DSN=postgresql://elevate:change-me@localhost:5433/elevate_graph
+# Host port 5433 avoids clashing with the pgvector stack on 5432.
+name: elevate-postgres-graph
+
+services:
+  postgres-graph:
+    image: postgres:16.6
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_GRAPH_USER:-elevate}
+      POSTGRES_PASSWORD: ${POSTGRES_GRAPH_PASSWORD:-change-me}
+      POSTGRES_DB: ${POSTGRES_GRAPH_DB:-elevate_graph}
+    ports:
+      - "${POSTGRES_GRAPH_PORT:-5433}:5432"
+    volumes:
+      - postgres_graph_data:/var/lib/postgresql/data
+    shm_size: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "${ELEVATE_DB_CPUS:-2}"
+          memory: ${ELEVATE_DB_MEMORY:-4g}
+
+volumes:
+  postgres_graph_data:

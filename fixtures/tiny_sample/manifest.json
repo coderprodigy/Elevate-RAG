@@ -1,0 +1,44 @@
+{
+  "citation_placeholder": "[[doc_id]]",
+  "extraction_format": {
+    "completion_delimiter": "<|COMPLETE|>",
+    "entity_row": "entity<|#|>name<|#|>type<|#|>description",
+    "relation_row": "relation<|#|>source<|#|>target<|#|>keywords<|#|>description",
+    "style": "LightRAG 1.5.x delimited rows",
+    "tuple_delimiter": "<|#|>"
+  },
+  "files": {
+    "corpus": "corpus.jsonl",
+    "extraction": "fake_llm/extraction.jsonl",
+    "generation": "fake_llm/generation.jsonl",
+    "judge": "fake_llm/judge.jsonl",
+    "malformed": "fake_llm/malformed.jsonl",
+    "questions": "questions.jsonl"
+  },
+  "fixture_version": "1.0.0",
+  "generation_variants": [
+    "rag",
+    "refusal",
+    "closed_book",
+    "partial"
+  ],
+  "judge_labels": [
+    "correct",
+    "partial",
+    "wrong"
+  ],
+  "num_documents": 17,
+  "num_gold_documents": 12,
+  "num_questions": 20,
+  "num_unanswerable": 3,
+  "query_type_counts": {
+    "comparison": 3,
+    "global": 3,
+    "multi-hop": 4,
+    "null": 3,
+    "single-hop": 4,
+    "temporal": 3
+  },
+  "refusal_string": "insufficient information",
+  "source": "tiny_sample"
+}

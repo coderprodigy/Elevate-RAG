@@ -1,0 +1,248 @@
+# Model_Registry (Requirement 3.1). docs/MODELS.md describes these entries; this file wins
+# if the two disagree.
+#
+# Every entry records: roles, provider, exact model ID, version, model family, context length
+# (tokens) and price in USD per million input / output tokens. Prices of local models are 0.
+#
+# Status:
+#   verified          the model ID was checked on the provider page / Hugging Face Hub.
+#   choose_at_freeze  the role is fixed but the exact model is not; fill in model_id, version,
+#                     context_length and prices, then set status to verified. The registry
+#                     refuses to resolve such an entry for a Run.
+#
+# Versions: Hugging Face entries use the Hub revision ("main"); replace it with the commit SHA
+# on the freeze date. Ollama entries record the tag digest from `ollama list`.
+#
+# Never edit a frozen entry in place: past Run_Records refer to it. Add a new key instead
+# (docs/MODELS.md section 4).
+
+schema_version: 1
+
+# Role -> entry key. `offline` needs no network, GPU or keys and is what tests and exit checks
+# use. `reference` is the reference configuration of Requirement 27.2 and resolves only after
+# extractor-api and judge-api are frozen.
+default_profile: offline
+profiles:
+  offline:
+    embedder: fake-embedder
+    reranker: fake-reranker
+    extraction: fake-llm
+    generator: fake-llm
+    judge: fake-llm
+  reference:
+    embedder: bge-m3
+    reranker: bge-reranker-v2-m3
+    extraction: extractor-api
+    generator: qwen3.6-35b-a3b
+    judge: judge-api
+
+models:
+  # ------------------------------------------------------------------ offline fakes
+  fake-embedder:
+    status: verified
+    roles: [embedder]
+    provider: fake
+    model_id: fake-embedder
+    version: "1"
+    family: fake
+    context_length: 8192
+    price_in_per_mtok: 0.0
+    price_out_per_mtok: 0.0
+    supports_seed: true
+    notes: Hash-based deterministic vectors.
+
+  fake-reranker:
+    status: verified
+    roles: [reranker]
+    provider: fake
+    model_id: fake-reranker
+    version: "1"
+    family: fake
+    context_length: 8192
+    price_in_per_mtok: 0.0
+    price_out_per_mtok: 0.0
+    supports_seed: true
+    notes: Deterministic scores.
+
+  fake-llm:
+    status: verified
+    roles: [extraction, generator, judge]
+    provider: fake
+    model_id: fake-llm
+    version: "1"
+    family: fake
+    context_length: 131072
+    price_in_per_mtok: 0.0
+    price_out_per_mtok: 0.0
+    supports_seed: true
+    notes: Scripted or record-replay responses.
+
+  # ------------------------------------------------------------------ embedders
+  bge-m3:
+    status: verified
+    roles: [embedder]
+    provider: sentence-transformers
+    model_id: BAAI/bge-m3
+    version: main
+    family: bge
+    context_length: 8192
+    price_in_per_mtok: 0.0
+    price_out_per_mtok: 0.0
+    supports_seed: false
+    notes: Reference embedder. About 2.3 GB, MIT.
+
+  qwen3-embedding-0.6b:
+    status: verified
+    roles: [embedder]
+    provider: sentence-transformers
+    model_id: Qwen/Qwen3-Embedding-0.6B
+    version: main
+    family: qwen
+    context_length: 32768
+    price_in_per_mtok: 0.0
+    price_out_per_mtok: 0.0
+    supports_seed: false
+    notes: About 1.2 GB, Apache-2.0.
+
+  minilm-l6:
+    status: verified
+    roles: [embedder]
+    provider: sentence-transformers
+    model_id: sentence-transformers/all-MiniLM-L6-v2
+    version: main
+    family: minilm
+    context_length: 256
+    price_in_per_mtok: 0.0
+    price_out_per_mtok: 0.0
+    supports_seed: false
+    notes: Small CPU-friendly option, about 90 MB, Apache-2.0.
+
+  openai-embedding:
+    status: choose_at_freeze
+    roles: [embedder]
+    provider: openai
+    model_id: null
+    version: null
+    family: openai
+    context_length: null
+    price_in_per_mtok: null
+    price_out_per_mtok: null
+    supports_seed: false
+    api_key_env: OPENAI_API_KEY
+    notes: Optional API embedder; pick an OpenAI text-embedding-* model at freeze.
+
+  # ------------------------------------------------------------------ rerankers
+  bge-reranker-v2-m3:
+    status: verified
+    roles: [reranker]
+    provider: sentence-transformers
+    model_id: BAAI/bge-reranker-v2-m3
+    version: main
+    family: bge
+    context_length: 8192
+    price_in_per_mtok: 0.0
+    price_out_per_mtok: 0.0
+    supports_seed: false
+    notes: Reference reranker (CrossEncoder). About 2.3 GB, Apache-2.0.
+
+  ms-marco-minilm-l6:
+    status: verified
+    roles: [reranker]
+    provider: sentence-transformers
+    model_id: cross-encoder/ms-marco-MiniLM-L-6-v2
+    version: main
+    family: minilm
+    context_length: 512
+    price_in_per_mtok: 0.0
+    price_out_per_mtok: 0.0
+    supports_seed: false
+    notes: Small CPU-friendly CrossEncoder, about 90 MB, Apache-2.0.
+
+  # ------------------------------------------------------------------ extraction LLMs
+  extractor-api:
+    status: choose_at_freeze
+    roles: [extraction]
+    provider: openai
+    model_id: null
+    version: null
+    family: openai
+    context_length: null
+    price_in_per_mtok: null
+    price_out_per_mtok: null
+    supports_seed: true
+    api_key_env: OPENAI_API_KEY
+    notes: Reference extractor; OpenAI's current low-cost model, priced on the freeze date.
+
+  # qwen3.6-35b-a3b (below) is also the alternative extractor for the extractor comparison.
+
+  # ------------------------------------------------------------------ generators
+  qwen3.6-35b-a3b:
+    status: verified
+    roles: [extraction, generator]
+    provider: vllm
+    model_id: Qwen/Qwen3.6-35B-A3B
+    version: main
+    family: qwen
+    context_length: 262144
+    price_in_per_mtok: 0.0
+    price_out_per_mtok: 0.0
+    supports_seed: true
+    base_url_env: VLLM_BASE_URL
+    api_key_env: VLLM_API_KEY
+    thinking: null
+    notes: >-
+      Reference generator. FP8 variant Qwen/Qwen3.6-35B-A3B-FP8; for Ollama add a separate
+      entry with the tag digest. Set thinking to on/off at freeze.
+
+  gemma-4-12b:
+    status: verified
+    roles: [generator]
+    provider: vllm
+    model_id: google/gemma-4-12B-it
+    version: main
+    family: gemma
+    context_length: 262144
+    price_in_per_mtok: 0.0
+    price_out_per_mtok: 0.0
+    supports_seed: true
+    base_url_env: VLLM_BASE_URL
+    api_key_env: VLLM_API_KEY
+    thinking: null
+    notes: >-
+      GGUF variant google/gemma-4-12B-it-qat-q4_0-gguf for llama.cpp/Ollama goes in a separate
+      entry. Set thinking to on/off at freeze.
+
+  claude-sonnet-5.5:
+    status: verified
+    roles: [generator]
+    provider: anthropic
+    model_id: claude-sonnet-5-5
+    version: claude-sonnet-5-5
+    family: anthropic
+    context_length: 1000000
+    price_in_per_mtok: 2.0
+    price_out_per_mtok: 10.0
+    # The API returns 400 if temperature, top_p or top_k is set; the gateway omits them
+    # (deviation from Requirement 3.3, recorded in the Phase 0 report). No seed parameter.
+    supports_temperature: false
+    supports_seed: false
+    api_key_env: ANTHROPIC_API_KEY
+    thinking: null
+    notes: Adaptive thinking is on by default; set the thinking/effort setting at freeze.
+
+  # ------------------------------------------------------------------ judge
+  judge-api:
+    status: choose_at_freeze
+    roles: [judge]
+    provider: openai
+    model_id: null
+    version: null
+    family: openai
+    context_length: null
+    price_in_per_mtok: null
+    price_out_per_mtok: null
+    supports_seed: true
+    api_key_env: OPENAI_API_KEY
+    notes: >-
+      An OpenAI model reaching Cohen's kappa >= 0.6 against human labels. Its family must
+      differ from every generator family in a Run.

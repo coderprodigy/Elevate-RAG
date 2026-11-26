@@ -1,0 +1,123 @@
+[project]
+name = "elevate"
+version = "0.1.0"
+description = "Elevate-RAG: shared vector + graph index with a learned query router (ECE 750)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+# Core dependencies: enough to run every phase offline with no-setup backends
+# (FAISS / NanoVectorDB + NetworkX) and deterministic fakes. Exact versions are
+# pinned here and transitively locked in uv.lock.
+dependencies = [
+    "faiss-cpu==1.16.0",
+    "nano-vectordb==0.0.4.3",
+    "networkx==3.6.1",
+    "numpy==2.4.6",
+    "pydantic==2.14.4",
+    "python-dotenv==1.2.4",
+    "pyyaml==6.0.4",
+    "rank-bm25==0.2.2",
+    "scikit-learn==1.9.1",
+    "scipy==1.17.1",
+    "tiktoken==0.14.0",
+    "typer==0.29.2",
+]
+
+# Heavy or networked integrations are opt-in so the core installs and tests offline.
+[project.optional-dependencies]
+lightrag = ["lightrag-hku==1.5.7"]
+ml = ["torch==2.15.0", "sentence-transformers==6.3.0"]
+providers = ["openai==3.3.0", "anthropic==2.14.0"]
+db = [
+    "qdrant-client==1.20.0",
+    "pymilvus==3.0.3",
+    "psycopg[binary]==3.3.9",
+    "pgvector==0.5.1",
+    "neo4j==6.4.1",
+]
+eval = ["ragas==0.4.4"]
+tracing = ["langfuse==5.2.0"]
+all = ["elevate[lightrag,ml,providers,db,eval,tracing]"]
+
+[project.scripts]
+elevate = "elevate.cli:app"
+
+[dependency-groups]
+dev = [
+    "hypothesis==6.170.17",
+    "mypy==2.4.1",
+    "pytest==9.2.0",
+    "ruff==0.17.6",
+    "types-pyyaml==6.0.12.20261122",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/elevate"]
+
+# ---------------------------------------------------------------- ruff (lint)
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "SIM", # simplify
+    "ANN", # type annotations on functions
+    "RUF", # ruff-specific
+]
+ignore = [
+    "ANN401", # typing.Any is allowed where genuinely needed
+    "B008",   # Typer uses function calls in argument defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN"]
+
+# ---------------------------------------------------------------- mypy (types)
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+packages = ["elevate"]
+strict = true
+warn_unreachable = true
+pretty = true
+
+# Third-party libraries without type stubs.
+[[tool.mypy.overrides]]
+module = [
+    "faiss.*",
+    "nano_vectordb.*",
+    "rank_bm25.*",
+    "sklearn.*",
+    "scipy.*",
+    "networkx.*",
+    "lightrag.*",
+    "sentence_transformers.*",
+    "torch.*",
+    "ragas.*",
+    "langfuse.*",
+    "pymilvus.*",
+    "pgvector.*",
+]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------- pytest
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+markers = [
+    "integration: needs a Docker database or API key; skipped when the prerequisite is absent",
+]

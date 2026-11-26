@@ -1,0 +1,33 @@
+# PostgreSQL + pgvector vector store (Requirement 2.4, 26.3).
+# Usage: docker compose -f docker/pgvector.yml --env-file .env up -d
+# Client setting: PGVECTOR_DSN=postgresql://elevate:change-me@localhost:5432/elevate_vectors
+# Keep PGVECTOR_USER / PGVECTOR_PASSWORD / PGVECTOR_DB / PGVECTOR_PORT in line with PGVECTOR_DSN.
+name: elevate-pgvector
+
+services:
+  pgvector:
+    image: pgvector/pgvector:0.8.0-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PGVECTOR_USER:-elevate}
+      POSTGRES_PASSWORD: ${PGVECTOR_PASSWORD:-change-me}
+      POSTGRES_DB: ${PGVECTOR_DB:-elevate_vectors}
+    ports:
+      - "${PGVECTOR_PORT:-5432}:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+    shm_size: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "${ELEVATE_DB_CPUS:-2}"
+          memory: ${ELEVATE_DB_MEMORY:-4g}
+
+volumes:
+  pgvector_data:

@@ -1,0 +1,43 @@
+# Shared defaults for every experiment config (schema: elevate.config.schema.ExperimentDefaults).
+# Experiment files override these values; ELEVATE_* environment variables override both.
+# Secrets (API keys, DB passwords, DSNs) are never set here: they come from the environment
+# or `.env` only. Thresholds below are the design's chosen defaults; tune them on dev only.
+
+seed: 42
+
+backends:
+  vector: faiss        # no-setup default (Req 2.3); also nanovectordb, qdrant, milvus, pgvector
+  graph: networkx      # no-setup default (Req 2.3); also neo4j, memgraph, postgres
+
+# Model_Registry keys per role (configs/models.yaml). The offline fakes need nothing.
+# A role given here is replaced as a whole by an experiment that sets the same role.
+models:
+  embedder:   {key: fake-embedder, family: fake}
+  reranker:   {key: fake-reranker, family: fake}
+  extraction: {key: fake-llm, family: fake}
+  generator:  {key: fake-llm, family: fake}
+  judge:      {key: fake-llm, family: fake}
+
+thresholds:
+  contamination_em: 0.25              # V0 closed-book EM flag (Req 14.4)
+  merge_threshold: 0.88               # entity cosine merge; A2 sweeps 0.82/0.88/0.94 (Req 16.1)
+  entity_description_merge_limit: 8   # summarise above this many descriptions (Req 16.4)
+  answer_entity_coverage_gate: 0.60   # fallback extractor below this (Req 18.3)
+  rrf_k: 60                           # RRF constant (Req 12.3)
+  reranker_top_n: 8                   # range 5-10 (Req 12.6)
+  judge_kappa_pass: 0.6               # Cohen's kappa vs human labels (Req 10.5)
+
+caps:
+  context_token_cap: 8000             # A3 sweeps 4k/8k/16k (Req 13, 28.3)
+  run_spending_cap_usd: 5.00          # 0 disables paid calls (Req 4.4)
+  project_spending_cap_usd: 200.00
+
+retry:
+  max_attempts: 5                     # transient errors (Req 3.5)
+  backoff_base_s: 2.0                 # exponential backoff base
+
+paths:
+  data_dir: ./data
+  results_dir: ./results
+  cache_dir: ./.cache/elevate
+  trace_dir: ./logs/traces

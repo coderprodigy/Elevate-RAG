@@ -1,0 +1,37 @@
+# Memgraph graph database (Requirement 2.4, 26.3).
+# Usage: docker compose -f docker/memgraph.yml --env-file .env up -d
+# Client settings: MEMGRAPH_URI=bolt://localhost:7688, MEMGRAPH_USER, MEMGRAPH_PASSWORD.
+# Host port 7688 avoids clashing with Neo4j on 7687 when both stacks run.
+name: elevate-memgraph
+
+services:
+  memgraph:
+    image: memgraph/memgraph:2.21.0
+    restart: unless-stopped
+    environment:
+      MEMGRAPH_USER: ${MEMGRAPH_USER:-memgraph}
+      MEMGRAPH_PASSWORD: ${MEMGRAPH_PASSWORD:-change-me}
+    # Cap Memgraph's own accounting below the container limit so it errors cleanly before OOM-kill.
+    command: ["--memory-limit=${MEMGRAPH_MEMORY_LIMIT_MB:-3584}", "--telemetry-enabled=false"]
+    ports:
+      - "${MEMGRAPH_PORT:-7688}:7687"
+    volumes:
+      - memgraph_data:/var/lib/memgraph
+      - memgraph_logs:/var/log/memgraph
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - echo 'RETURN 1;' | mgconsole --username "$${MEMGRAPH_USER}" --password "$${MEMGRAPH_PASSWORD}" || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "${ELEVATE_DB_CPUS:-2}"
+          memory: ${ELEVATE_DB_MEMORY:-4g}
+
+volumes:
+  memgraph_data:
+  memgraph_logs:

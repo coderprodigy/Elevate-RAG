@@ -1,0 +1,1113 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Scaffold the Python project and tooling": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715021
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673727075
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795674570276
+      }
+    ],
+    "2.1 Implement error taxonomy, IDs and token counting": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715095
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795674581084
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795675735926
+      }
+    ],
+    "2.2 Implement Config_Loader with typed schema and secrets": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715134
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795675749526
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795677945228
+      }
+    ],
+    "2.3 Implement seeding and Run_Record lifecycle": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715165
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795675751071
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795677945347
+      }
+    ],
+    "3.1 Implement Model_Registry": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715197
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795675752693
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795677945480
+      }
+    ],
+    "3.2 Implement content-hash Cache": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715248
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795675752989
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795677945593
+      }
+    ],
+    "3.4 Implement Budget_Tracker and Tracer": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715280
+      },
+      {
+        "executionId": "cc473121-c964-48d5-89a2-5779fc36d9f1",
+        "chatSessionId": "sess_f397cc78-fdeb-486b-9ebe-7288dea8daf3",
+        "timestamp": 1795678029843
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699209108
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699219624
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699705891
+      }
+    ],
+    "3.5 Implement LLM_Gateway and providers": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715345
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699209234
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699711872
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795700784544
+      }
+    ],
+    "4.1 Implement Vector_Store protocol with FAISS and NanoVectorDB backends": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715389
+      },
+      {
+        "executionId": "cc473121-c964-48d5-89a2-5779fc36d9f1",
+        "chatSessionId": "sess_f397cc78-fdeb-486b-9ebe-7288dea8daf3",
+        "timestamp": 1795678030876
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699209299
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699220656
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699706402
+      }
+    ],
+    "4.2 Implement Graph_Store protocol with NetworkX backend": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715412
+      },
+      {
+        "executionId": "cc473121-c964-48d5-89a2-5779fc36d9f1",
+        "chatSessionId": "sess_f397cc78-fdeb-486b-9ebe-7288dea8daf3",
+        "timestamp": 1795678031460
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699209372
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699221501
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699707004
+      }
+    ],
+    "4.3 Add Docker Compose stacks": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715441
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795674582048
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795675737055
+      }
+    ],
+    "5.1 Write Setup_Docs": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715470
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795674583498
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795675743783
+      }
+    ],
+    "5.2 Create the bundled synthetic Tiny_Sample fixture": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715519
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795674584282
+      },
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795675743906
+      }
+    ],
+    "5.3 Implement verify-setup and the exit-check framework": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715547
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699209465
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795700789557
+      },
+      {
+        "executionId": "da6e5665-4023-43be-847f-e063905b3c65",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795706548113
+      },
+      {
+        "executionId": "da6e5665-4023-43be-847f-e063905b3c65",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795706559041
+      }
+    ],
+    "5.4 Implement the Phase 0 exit-check": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715582
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699209524
+      }
+    ],
+    "6. Checkpoint - Phase 0 exit-check and report": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715608
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699209576
+      }
+    ],
+    "7.1 Implement data models and JSONL IO": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715641
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699209696
+      }
+    ],
+    "7.3 Implement Dataset_Loaders": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715675
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699209735
+      }
+    ],
+    "8.1 Implement Splitter": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715713
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699209823
+      }
+    ],
+    "9.1 Implement Chunker": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715744
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699209924
+      }
+    ],
+    "9.2 Implement the LightRAG bridge and Chunk_Store adapter": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715773
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210032
+      }
+    ],
+    "10.1 Implement answer and retrieval metrics": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673715982
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210107
+      }
+    ],
+    "10.4 Implement harness aggregation and Run_Record output": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716028
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210174
+      }
+    ],
+    "10.5 Implement RAGAS and GraphRAG-Bench evidence recall adapters": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716067
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210323
+      }
+    ],
+    "10.6 Implement LLM_Judge": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716107
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210370
+      }
+    ],
+    "10.7 Implement Cohen's kappa and judge validation command": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716149
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210422
+      }
+    ],
+    "10.10 Implement the Phase 1 exit-check (gate G1)": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716186
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210499
+      }
+    ],
+    "11. Checkpoint - Phase 1 exit-check and report": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716225
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210686
+      }
+    ],
+    "12.1 Implement Embedders": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716279
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210748
+      }
+    ],
+    "12.2 Implement HNSW parameters and BM25_Index": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716312
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210816
+      }
+    ],
+    "13.1 Implement RRF fusion": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716348
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210850
+      }
+    ],
+    "13.4 Implement Rerankers": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716377
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210941
+      }
+    ],
+    "13.6 Implement Vector_Retriever": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716411
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699210999
+      }
+    ],
+    "14.1 Implement Context_Builder": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716448
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211050
+      }
+    ],
+    "14.3 Implement Generator": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716486
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211100
+      }
+    ],
+    "15.1 Implement V0–V4 pipelines": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716523
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211149
+      }
+    ],
+    "15.2 Implement V4 dev-only tuning (gate G2)": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716556
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211241
+      }
+    ],
+    "15.3 Implement the Phase 2 exit-check": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716589
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211342
+      }
+    ],
+    "16. Checkpoint - Phase 2 exit-check and report": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716622
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211434
+      }
+    ],
+    "17.1 Implement Extractor": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716685
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211466
+      }
+    ],
+    "17.2 Implement Entity_Resolver": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716720
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211522
+      }
+    ],
+    "17.5 Implement Graph_Builder and LightRAG construction": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716752
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211596
+      }
+    ],
+    "17.7 Implement Community_Builder": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716789
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211670
+      }
+    ],
+    "18.1 Implement Graph_Retriever": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716889
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211770
+      }
+    ],
+    "19.1 Implement Graph_Quality_Checker": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716918
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211853
+      }
+    ],
+    "19.2 Implement Fallback_Extractor": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716947
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211907
+      }
+    ],
+    "19.3 Implement triple audit export": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673716979
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699211964
+      }
+    ],
+    "20.1 Implement SystemAdapter and reference systems": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717014
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212017
+      }
+    ],
+    "20.2 Implement alternative framework adapters": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717047
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212068
+      }
+    ],
+    "20.3 Implement the Phase 3 exit-check": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717083
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212120
+      }
+    ],
+    "21. Checkpoint - Phase 3 exit-check and report": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717114
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212167
+      }
+    ],
+    "22.1 Implement Router protocol, R0 and R1": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717148
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212216
+      }
+    ],
+    "22.3 Implement R2 classifier router": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717180
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212258
+      }
+    ],
+    "22.5 Implement R3 LLM classifier router": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717215
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212300
+      }
+    ],
+    "22.6 Implement R4 confidence fallback router": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717247
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212342
+      }
+    ],
+    "23.1 Implement Oracle_Router": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717280
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212383
+      }
+    ],
+    "23.2 Implement router metrics and cached replay": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717311
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212440
+      }
+    ],
+    "23.4 Implement the Phase 4 exit-check": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717347
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212517
+      }
+    ],
+    "24. Checkpoint - Phase 4 exit-check and report": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717395
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212551
+      }
+    ],
+    "25.1 Implement Qdrant, Milvus and pgvector Vector_Stores": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717425
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212589
+      }
+    ],
+    "25.2 Implement Neo4j, Memgraph and Postgres graph Graph_Stores": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717455
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212655
+      }
+    ],
+    "26.1 Implement Level A vector benchmark": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717491
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212753
+      }
+    ],
+    "26.2 Implement Level A graph benchmark": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717529
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212815
+      }
+    ],
+    "26.3 Implement Level B comparison and fairness records": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717568
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212850
+      }
+    ],
+    "26.4 Implement the Phase 5 exit-check": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717602
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212883
+      }
+    ],
+    "27. Checkpoint - Phase 5 exit-check and report": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717638
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212930
+      }
+    ],
+    "28.1 Define experiment schema and matrix files": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717668
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699212967
+      }
+    ],
+    "28.2 Implement runner execution, resume, dry run and manifest": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717701
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213002
+      }
+    ],
+    "28.3 Implement one-factor model comparison and ablation reporting": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717734
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213070
+      }
+    ],
+    "28.5 Implement the Phase 6 exit-check": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717769
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213110
+      }
+    ],
+    "29. Checkpoint - Phase 6 exit-check and report": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717801
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213141
+      }
+    ],
+    "30.1 Implement statistical methods": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717844
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213172
+      }
+    ],
+    "31.1 Complete the Annotation_Tool": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717876
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213202
+      }
+    ],
+    "31.3 Implement Error_Analyzer": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717927
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213233
+      }
+    ],
+    "32.1 Implement figures, tables and cost reporting": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717956
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213266
+      }
+    ],
+    "32.2 Implement appendix export and report template": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673717988
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213297
+      }
+    ],
+    "32.4 Implement the Phase 7 exit-check": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673718017
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213332
+      }
+    ],
+    "33. Checkpoint - Phase 7 exit-check and report": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673718068
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213363
+      }
+    ],
+    "34.1 Implement `elevate e2e`": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673718103
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213397
+      }
+    ],
+    "34.3 Finalise README": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673718140
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213431
+      }
+    ],
+    "35. Final checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795673718173
+      },
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699213459
+      }
+    ],
+    "2. Implement core utilities and configuration": [
+      {
+        "executionId": "15bbc876-6493-4d88-9ae9-0b2d4bcfcdb8",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795677945410
+      }
+    ],
+    "4. Implement store protocols and no-setup backends": [
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795699707065
+      }
+    ],
+    "3. Implement Model_Registry, Cache, Budget_Tracker, Tracer and LLM_Gateway": [
+      {
+        "executionId": "b26c95a5-f5fa-4815-a748-8d08a510edcd",
+        "chatSessionId": "sess_1e07a7b0-a7a6-4556-aed6-e7fe9cc4888f",
+        "timestamp": 1795700784653
+      }
+    ]
+  }
+}
