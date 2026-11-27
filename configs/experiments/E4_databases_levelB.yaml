@@ -1,0 +1,16 @@
+id: E4
+question: RQ4
+description: >
+  Level B: swap LightRAG storage backends on a fixed 300-question subset; only the backend
+  changes. Level A micro-benchmarks run with `elevate-rag bench vector|graph` (see README).
+pipeline: ../pipelines/reference.yaml
+datasets: [multihop_rag, hotpotqa]
+limit: 300
+variants:
+  - {name: qdrant-neo4j, mode: mix}
+  - {name: milvus, mode: mix, overrides: {lightrag.vector_storage: MilvusVectorDBStorage}}
+  - {name: pgvector, mode: mix, overrides: {lightrag.vector_storage: PGVectorStorage}}
+  - {name: faiss, mode: mix, overrides: {lightrag.vector_storage: FaissVectorDBStorage}}
+  - {name: memgraph, mode: mix, overrides: {lightrag.graph_storage: MemgraphStorage}}
+  - {name: pg-graph-tables, mode: mix, overrides: {lightrag.graph_storage: PGTableGraphStorage}}
+  - {name: networkx, mode: mix, overrides: {lightrag.graph_storage: NetworkXStorage}}

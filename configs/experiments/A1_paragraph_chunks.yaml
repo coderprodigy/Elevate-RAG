@@ -1,0 +1,12 @@
+id: A1-paragraph
+question: ablations
+description: >
+  A1 (Wikipedia datasets): paragraph-level chunks, where gold evidence is a paragraph, vs the
+  512-token sentence-aware default.
+pipeline: ../pipelines/reference.yaml
+datasets: [hotpotqa, musique]
+variants:
+  - {name: sentence512-v4, mode: v4}
+  - {name: paragraph-v4, mode: v4, overrides: {chunking.strategy: paragraph}}
+  - {name: sentence512-mix, mode: mix}
+  - {name: paragraph-mix, mode: mix, overrides: {chunking.strategy: paragraph}}

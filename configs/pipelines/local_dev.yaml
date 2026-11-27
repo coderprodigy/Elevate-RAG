@@ -1,0 +1,9 @@
+# Reference models, but no Docker: exact vectors, NetworkX graph, LightRAG file storages.
+# Use for development; never for E4 (database comparison) — see FR-DB7.
+extends: reference.yaml
+name: local-dev
+vector_store: {backend: exact}
+graph_store: {backend: networkx}
+lightrag:
+  vector_storage: NanoVectorDBStorage
+  graph_storage: NetworkXStorage

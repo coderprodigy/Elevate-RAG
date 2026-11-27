@@ -1,0 +1,13 @@
+id: E3-labels
+question: RQ3
+description: >
+  Every mode on the DEV split. Feeds (a) outcome labels for R2 (router train --scheme outcome)
+  and (b) the R4 threshold. Never run on test for training purposes.
+pipeline: ../pipelines/reference.yaml
+datasets: [nq, hotpotqa, musique, multihop_rag, graphrag_bench_medical, graphrag_bench_novel]
+split: dev
+variants:
+  - {name: V4, mode: v4}
+  - {name: local, mode: local}
+  - {name: global, mode: global}
+  - {name: mix, mode: mix}

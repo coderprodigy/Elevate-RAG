@@ -1,0 +1,53 @@
+# $0 CONFIGURATION (project-owner decision D-27: no paid calls).
+# Everything runs locally: open embedder + reranker via sentence-transformers, small LLMs via
+# Ollama (OpenAI-compatible endpoint), live Qdrant + Neo4j from infrastructure/docker.
+#
+# This is a scaled-down stand-in for the reference configuration, NOT the reference itself:
+#   * generator/extractor is a 3B model instead of Qwen3.6-35B / Claude Haiku;
+#   * the judge is a 3B model from a different family (Meta Llama vs Qwen) — independence holds,
+#     but its reliability MUST be checked against human labels (kappa ≥ 0.6) before results count.
+# Report every number from this config as "small local models".
+extends: reference.yaml
+name: local-free
+models:
+  embedder:
+    provider: sentence-transformers
+    model: BAAI/bge-small-en-v1.5
+    revision: 5c38ec7c405ec4b44b94cc5a9bb96e735b38267a
+    dimension: 384
+    family: bge
+    params: {query_prompt_name: null}
+  reranker:
+    provider: cross-encoder
+    model: BAAI/bge-reranker-v2-m3
+    revision: 953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e
+    family: bge
+    params: {max_length: 512}
+    batch_size: 16
+  extractor: &qwen
+    provider: openai-compatible
+    model: qwen2.5:3b-instruct
+    base_url: http://localhost:11434/v1
+    family: qwen
+    params: {seed: 0}
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+    max_concurrency: 2
+    timeout_s: 600
+  keyword: *qwen
+  generator: *qwen
+  router_llm: *qwen
+  judge:
+    provider: openai-compatible
+    model: llama3.2:3b
+    base_url: http://localhost:11434/v1
+    family: llama
+    params: {seed: 0}
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+    max_concurrency: 2
+    timeout_s: 600
+lightrag:
+  llm_max_async: 2
+  max_parallel_insert: 1
+budget: {max_usd: 0}

@@ -1,0 +1,108 @@
+[project]
+name = "elevate-rag"
+version = "0.1.0"
+description = "Elevate-RAG: a reproducible research platform comparing vector, graph and routed hybrid retrieval-augmented generation."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "MIT" }
+dependencies = [
+    "pydantic>=2.8,<3",
+    "pyyaml>=6.0",
+    "numpy>=1.26,<3",
+    "scipy>=1.13",
+    "scikit-learn>=1.5",
+    "networkx>=3.3",
+    "tiktoken>=0.8",
+    "typer>=0.12",
+    "httpx>=0.27",
+    "matplotlib>=3.9",
+    "huggingface-hub>=0.26",
+    "pyarrow>=17",
+    "psutil>=6",
+    "anthropic>=1.0",
+    # Primary graph RAG framework. Pinned to the release named in the project plan.
+    "lightrag-hku==1.5.7",
+]
+
+[project.optional-dependencies]
+# Local open-weight embedders and cross-encoder rerankers (pulls in torch, ~1 GB).
+local-models = ["sentence-transformers>=3.3"]
+# client minor must be within 1 of the pinned server (qdrant/qdrant:v1.15.5)
+qdrant = ["qdrant-client>=1.15,<1.16"]
+milvus = ["pymilvus>=2.5"]
+postgres = ["psycopg[binary]>=3.2", "pgvector>=0.3", "asyncpg>=0.30"]
+faiss = ["faiss-cpu>=1.9"]
+neo4j = ["neo4j>=5.25"]
+ragas = ["ragas>=0.3.7"]
+langfuse = ["langfuse>=3.8"]
+databases = ["elevate-rag[qdrant,milvus,postgres,faiss,neo4j]"]
+
+[project.scripts]
+elevate-rag = "elevate_rag.cli.main:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-PyYAML",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/elevate_rag"]
+
+[tool.uv]
+# Only resolve releases that are at least two weeks old at project kickoff
+# (reproducibility + supply-chain hygiene). Bump deliberately, never implicitly.
+exclude-newer = "2026-11-12T00:00:00Z"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "C4", "PT", "RET", "ASYNC"]
+# SIM905: "a b c".split() is clearer than a 40-item list literal for stop-word lists.
+# ASYNC240: only tiny local metadata files (progress lists, manifests) are read synchronously.
+ignore = ["RUF001", "RUF002", "RUF003", "B008", "SIM905", "ASYNC240"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PT011", "B017", "PT018", "RUF012"]
+
+[tool.mypy]
+python_version = "3.12"
+packages = ["elevate_rag"]
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = true
+no_implicit_optional = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: needs optional services or packages; skipped when unavailable",
+    "e2e: end-to-end pipeline tests on the synthetic corpus",
+    "network: needs internet access",
+]
+addopts = "-ra --strict-markers"
+filterwarnings = ["ignore::DeprecationWarning:lightrag.*"]
+
+[tool.coverage.run]
+source = ["elevate_rag"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

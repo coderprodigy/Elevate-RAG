@@ -1,0 +1,36 @@
+id: E6
+question: RQ5-interaction
+description: Full factorial retrieval mode × generator size (hypothesis - graph context helps small generators more).
+pipeline: ../pipelines/reference.yaml
+datasets: [hotpotqa, musique, graphrag_bench_medical, graphrag_bench_novel]
+variants:
+  - name: v4-gemma4-12b
+    mode: v4
+    overrides:
+      models.generator: {provider: openai-compatible, model: google/gemma-4-12B-it, revision: 43c9d014b231474fa7212dbb48a762566c2b255d, base_url: "${OPENAI_COMPAT_BASE_URL}", family: gemma, price_input_per_mtok: 0.0, price_output_per_mtok: 0.0}
+  - name: v4-qwen36-35b
+    mode: v4
+  - name: v4-sonnet
+    mode: v4
+    overrides:
+      models.generator: {provider: anthropic, model: claude-sonnet-5-5, family: claude, params: {effort: low}, price_input_per_mtok: 2.0, price_output_per_mtok: 10.0}
+  - name: local-gemma4-12b
+    mode: local
+    overrides:
+      models.generator: {provider: openai-compatible, model: google/gemma-4-12B-it, revision: 43c9d014b231474fa7212dbb48a762566c2b255d, base_url: "${OPENAI_COMPAT_BASE_URL}", family: gemma, price_input_per_mtok: 0.0, price_output_per_mtok: 0.0}
+  - name: local-qwen36-35b
+    mode: local
+  - name: local-sonnet
+    mode: local
+    overrides:
+      models.generator: {provider: anthropic, model: claude-sonnet-5-5, family: claude, params: {effort: low}, price_input_per_mtok: 2.0, price_output_per_mtok: 10.0}
+  - name: mix-gemma4-12b
+    mode: mix
+    overrides:
+      models.generator: {provider: openai-compatible, model: google/gemma-4-12B-it, revision: 43c9d014b231474fa7212dbb48a762566c2b255d, base_url: "${OPENAI_COMPAT_BASE_URL}", family: gemma, price_input_per_mtok: 0.0, price_output_per_mtok: 0.0}
+  - name: mix-qwen36-35b
+    mode: mix
+  - name: mix-sonnet
+    mode: mix
+    overrides:
+      models.generator: {provider: anthropic, model: claude-sonnet-5-5, family: claude, params: {effort: low}, price_input_per_mtok: 2.0, price_output_per_mtok: 10.0}

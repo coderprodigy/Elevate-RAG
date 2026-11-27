@@ -1,0 +1,82 @@
+# REFERENCE CONFIGURATION (plan §Model comparison, step 1; FR-M3)
+#   strong open embedder · open reranker · cheap API extractor · mid open generator · Qdrant + Neo4j
+# Every model ID and revision below was verified on 2026-11-26. Freeze them at kickoff (plan:
+# "Freeze exact model IDs in week 1"). Prices are USD per million tokens (Claude pricing table
+# cached 2026-11-03); self-hosted models declare 0 — set your GPU cost if you want it counted.
+#
+# Two deliberate gaps make `experiment validate` fail until the team decides (D-15, NFR-3):
+#   * models.judge is unset — pick the strongest model from a family NOT used as a generator.
+#   * budget.max_usd is 0 — raise it only after the 5 % indexing pilot and team approval.
+name: reference
+dataset: null            # set per experiment
+chunking: {strategy: sentence, chunk_tokens: 512, overlap_tokens: 64, prepend_title: true}
+models:
+  embedder:
+    provider: sentence-transformers
+    model: Qwen/Qwen3-Embedding-0.6B
+    revision: 97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3
+    dimension: 1024
+    family: qwen
+    params: {query_prompt_name: query}
+    batch_size: 32
+  reranker:
+    provider: cross-encoder
+    model: BAAI/bge-reranker-v2-m3
+    revision: 953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e
+    family: bge
+    params: {max_length: 512}
+  extractor:
+    provider: anthropic
+    model: claude-haiku-5-5
+    family: claude
+    params: {effort: low}
+    price_input_per_mtok: 0.10
+    price_output_per_mtok: 0.50
+    max_concurrency: 8
+  keyword:
+    provider: anthropic
+    model: claude-haiku-5-5
+    family: claude
+    params: {effort: low}
+    price_input_per_mtok: 0.10
+    price_output_per_mtok: 0.50
+  generator:
+    # mid open generator, served by vLLM/llama.cpp/Ollama behind an OpenAI-compatible endpoint
+    provider: openai-compatible
+    model: Qwen/Qwen3.6-35B-A3B
+    revision: 345d467b117d1fd5eda9b879a5988de9ae5f47a7
+    base_url: ${OPENAI_COMPAT_BASE_URL}
+    family: qwen
+    params: {seed: 0}
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+  router_llm:
+    provider: anthropic
+    model: claude-haiku-5-5
+    family: claude
+    params: {effort: low}
+    price_input_per_mtok: 0.10
+    price_output_per_mtok: 0.50
+vector_store:
+  backend: qdrant
+  url_env: ELEVATE_QDRANT_URL
+  hnsw_m: 16
+  hnsw_ef_construction: 200
+  hnsw_ef_search: 128
+graph_store: {backend: neo4j, url_env: ELEVATE_NEO4J_URI}
+lightrag:
+  # LightRAG's own storage classes read QDRANT_URL / NEO4J_URI / NEO4J_USERNAME / NEO4J_PASSWORD
+  vector_storage: QdrantVectorDBStorage
+  graph_storage: Neo4JStorage
+  entity_extract_max_gleaning: 1
+retrieval:
+  candidates: 50
+  final_k: 8
+  rrf_k: 60
+  context_budget: 8192
+  kg_share: 0.5
+  graph_depth: 1
+resolution: {enabled: true, similarity_threshold: 0.92}
+community: {enabled: false}
+router: {level: static, static_mode: vector}
+budget: {max_usd: 0, pilot_fraction: 0.05}

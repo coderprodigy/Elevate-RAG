@@ -1,0 +1,17 @@
+id: E3
+question: RQ3
+description: >
+  Router levels on test. R2 models must be trained first on dev data:
+  router train runs/routers/r2-type --scheme type --dataset ... ;
+  router train runs/routers/r2-outcome --scheme outcome --runs runs/E3-labels --dataset ...
+  Oracle/regret: compute with routing.oracle on the E2 per-mode results (same test questions).
+pipeline: ../pipelines/reference.yaml
+datasets: [nq, hotpotqa, musique, multihop_rag, graphrag_bench_medical, graphrag_bench_novel]
+variants:
+  - {name: R0-vector, router: {level: static, static_mode: vector}}
+  - {name: R0-mix, router: {level: static, static_mode: mix}}
+  - {name: R1-rules, router: {level: rules}}
+  - {name: R2-type, router: {level: classifier, classifier_path: runs/routers/r2-type}}
+  - {name: R2-outcome, router: {level: classifier, classifier_path: runs/routers/r2-outcome}}
+  - {name: R3-llm, router: {level: llm}}
+  - {name: R4-fallback, router: {level: fallback}, tune_on_dev: true}

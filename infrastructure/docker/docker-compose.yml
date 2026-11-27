@@ -1,0 +1,144 @@
+# Elevate-RAG database stack (FR-DB3, plan §Database comparison fairness rules).
+#
+# * Image tags pinned (verified on Docker Hub / quay.io, 2026-11-26). Milvus/etcd/MinIO follow
+#   Milvus's official v2.5.18 standalone compose.
+# * Non-default host ports and a unique project name avoid clashing with other local services.
+# * Ports bind to 127.0.0.1 by default (ELEVATE_BIND_HOST), so on a cloud host the databases are
+#   never reachable from outside even if the firewall / security group is too permissive.
+# * Credentials come from .env (see .env.example) — none are hard-coded.
+# * Every service has the same CPU/RAM limits (ELEVATE_DB_CPUS / ELEVATE_DB_MEMORY) so Level-A/B
+#   comparisons run under identical resources. Record the values used in the report appendix.
+# * Start only what you need with profiles, e.g.:
+#     docker compose --env-file ../../.env --profile reference up -d      # Qdrant + Neo4j
+#     docker compose --env-file ../../.env --profile all up -d
+name: elevate-rag
+
+x-limits: &limits
+  deploy:
+    resources:
+      limits:
+        cpus: "${ELEVATE_DB_CPUS:-4}"
+        memory: "${ELEVATE_DB_MEMORY:-4g}"
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.15.5
+    profiles: [reference, vector, all]
+    <<: *limits
+    ports: ["${ELEVATE_BIND_HOST:-127.0.0.1}:${ELEVATE_QDRANT_PORT:-16333}:6333"]
+    volumes: ["qdrant_data:/qdrant/storage"]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  neo4j:
+    image: neo4j:5.26.12-community
+    profiles: [reference, graph, all]
+    <<: *limits
+    environment:
+      NEO4J_AUTH: "neo4j/${ELEVATE_NEO4J_PASSWORD:?set ELEVATE_NEO4J_PASSWORD in .env}"
+      # heap + page cache must fit inside ELEVATE_DB_MEMORY (default limit 4g; 2g on 8 GB hosts)
+      NEO4J_server_memory_heap_initial__size: "${ELEVATE_NEO4J_HEAP:-1G}"
+      NEO4J_server_memory_heap_max__size: "${ELEVATE_NEO4J_HEAP:-1G}"
+      NEO4J_server_memory_pagecache_size: "${ELEVATE_NEO4J_PAGECACHE:-512M}"
+    ports:
+      - "${ELEVATE_BIND_HOST:-127.0.0.1}:${ELEVATE_NEO4J_PORT:-17687}:7687"
+      - "${ELEVATE_BIND_HOST:-127.0.0.1}:${ELEVATE_NEO4J_HTTP_PORT:-17474}:7474"
+    volumes: ["neo4j_data:/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$${NEO4J_AUTH#neo4j/}\" 'RETURN 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+  memgraph:
+    image: memgraph/memgraph:3.5.0
+    profiles: [graph, all]
+    <<: *limits
+    ports: ["${ELEVATE_BIND_HOST:-127.0.0.1}:${ELEVATE_MEMGRAPH_PORT:-17688}:7687"]
+    volumes: ["memgraph_data:/var/lib/memgraph"]
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'RETURN 1;' | mgconsole || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg17
+    profiles: [vector, graph, all]
+    <<: *limits
+    environment:
+      POSTGRES_USER: elevate
+      POSTGRES_PASSWORD: "${ELEVATE_PG_PASSWORD:?set ELEVATE_PG_PASSWORD in .env}"
+      POSTGRES_DB: elevate_rag
+    ports: ["${ELEVATE_BIND_HOST:-127.0.0.1}:${ELEVATE_PG_PORT:-15432}:5432"]
+    volumes: ["pg_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elevate -d elevate_rag"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.18
+    profiles: [vector, all]
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    volumes: ["etcd_data:/etcd"]
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio:
+    image: minio/minio:RELEASE.2024-05-28T17-19-04Z
+    profiles: [vector, all]
+    environment:
+      MINIO_ACCESS_KEY: "${ELEVATE_MINIO_ACCESS_KEY:-elevate-minio}"
+      MINIO_SECRET_KEY: "${ELEVATE_MINIO_SECRET_KEY:-elevate-minio-secret}"
+    command: minio server /minio_data
+    volumes: ["minio_data:/minio_data"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  milvus:
+    image: milvusdb/milvus:v2.5.17
+    profiles: [vector, all]
+    <<: *limits
+    command: ["milvus", "run", "standalone"]
+    security_opt: ["seccomp:unconfined"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MINIO_ACCESS_KEY_ID: "${ELEVATE_MINIO_ACCESS_KEY:-elevate-minio}"
+      MINIO_SECRET_ACCESS_KEY: "${ELEVATE_MINIO_SECRET_KEY:-elevate-minio-secret}"
+    ports: ["${ELEVATE_BIND_HOST:-127.0.0.1}:${ELEVATE_MILVUS_PORT:-19531}:19530"]
+    volumes: ["milvus_data:/var/lib/milvus"]
+    depends_on:
+      etcd: {condition: service_healthy}
+      minio: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+
+volumes:
+  qdrant_data:
+  neo4j_data:
+  memgraph_data:
+  pg_data:
+  etcd_data:
+  minio_data:
+  milvus_data:

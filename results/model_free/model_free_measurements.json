@@ -1,0 +1,603 @@
+{
+  "label": "PARTIAL RESULTS \u2014 retrieval (V1 BM25) and routing classification only; no generation, no LLM judge",
+  "created_at": "2026-11-26T20:51:27+00:00",
+  "elevate_rag": "0.1.0",
+  "python": "3.12.13",
+  "chunking": {
+    "strategy": "sentence",
+    "chunk_tokens": 512,
+    "overlap_tokens": 64,
+    "encoding": "o200k_base",
+    "prepend_title": true
+  },
+  "bm25": {
+    "k1": 0.9,
+    "b": 0.4
+  },
+  "bm25_retrieval": [
+    {
+      "dataset": "nq",
+      "dataset_version": "e62455cbd46d",
+      "chunks": 4839,
+      "evidence_verbatim_rate": null,
+      "string_evidence_recall_valid": false,
+      "test_questions_answerable": 400,
+      "metrics": {
+        "recall@5": {
+          "mean": 0.7375,
+          "ci95": [
+            0.695,
+            0.78
+          ],
+          "n": 400,
+          "undefined": 0
+        },
+        "recall@10": {
+          "mean": 0.7825,
+          "ci95": [
+            0.7425,
+            0.8225
+          ],
+          "n": 400,
+          "undefined": 0
+        },
+        "recall@50": {
+          "mean": 0.845,
+          "ci95": [
+            0.8075,
+            0.8775
+          ],
+          "n": 400,
+          "undefined": 0
+        },
+        "ndcg@10": {
+          "mean": 0.6737,
+          "ci95": [
+            0.6353,
+            0.7155
+          ],
+          "n": 400,
+          "undefined": 0
+        },
+        "evidence_recall@10": null
+      },
+      "primary_recall_by_query_type": {
+        "single_hop": {
+          "mean": 0.7825,
+          "ci95": [
+            0.7425,
+            0.8225
+          ],
+          "n": 400,
+          "undefined": 0
+        }
+      },
+      "seconds": {
+        "chunking": 1.37,
+        "queries": 0.38
+      }
+    },
+    {
+      "dataset": "hotpotqa",
+      "dataset_version": "0147cb8eef81",
+      "chunks": 9820,
+      "evidence_verbatim_rate": null,
+      "string_evidence_recall_valid": false,
+      "test_questions_answerable": 800,
+      "metrics": {
+        "recall@5": {
+          "mean": 0.7037,
+          "ci95": [
+            0.6825,
+            0.7238
+          ],
+          "n": 800,
+          "undefined": 0
+        },
+        "recall@10": {
+          "mean": 0.8213,
+          "ci95": [
+            0.8031,
+            0.8381
+          ],
+          "n": 800,
+          "undefined": 0
+        },
+        "recall@50": {
+          "mean": 0.9319,
+          "ci95": [
+            0.92,
+            0.9431
+          ],
+          "n": 800,
+          "undefined": 0
+        },
+        "ndcg@10": {
+          "mean": 0.7298,
+          "ci95": [
+            0.7124,
+            0.7462
+          ],
+          "n": 800,
+          "undefined": 0
+        },
+        "evidence_recall@10": null
+      },
+      "primary_recall_by_query_type": {
+        "comparison": {
+          "mean": 0.9448,
+          "ci95": [
+            0.9202,
+            0.9663
+          ],
+          "n": 163,
+          "undefined": 0
+        },
+        "multi_hop": {
+          "mean": 0.7896,
+          "ci95": [
+            0.7684,
+            0.8085
+          ],
+          "n": 637,
+          "undefined": 0
+        }
+      },
+      "seconds": {
+        "chunking": 2.51,
+        "queries": 3.22
+      }
+    },
+    {
+      "dataset": "musique",
+      "dataset_version": "a72ede2b82b3",
+      "chunks": 8180,
+      "evidence_verbatim_rate": null,
+      "string_evidence_recall_valid": false,
+      "test_questions_answerable": 400,
+      "metrics": {
+        "recall@5": {
+          "mean": 0.4612,
+          "ci95": [
+            0.4325,
+            0.4896
+          ],
+          "n": 400,
+          "undefined": 0
+        },
+        "recall@10": {
+          "mean": 0.5252,
+          "ci95": [
+            0.4969,
+            0.5538
+          ],
+          "n": 400,
+          "undefined": 0
+        },
+        "recall@50": {
+          "mean": 0.6825,
+          "ci95": [
+            0.6546,
+            0.7096
+          ],
+          "n": 400,
+          "undefined": 0
+        },
+        "ndcg@10": {
+          "mean": 0.5069,
+          "ci95": [
+            0.4833,
+            0.532
+          ],
+          "n": 400,
+          "undefined": 0
+        },
+        "evidence_recall@10": null
+      },
+      "primary_recall_by_query_type": {
+        "multi_hop": {
+          "mean": 0.5252,
+          "ci95": [
+            0.4969,
+            0.5538
+          ],
+          "n": 400,
+          "undefined": 0
+        }
+      },
+      "seconds": {
+        "chunking": 1.68,
+        "queries": 1.1
+      }
+    },
+    {
+      "dataset": "multihop_rag",
+      "dataset_version": "3e63099d6483",
+      "chunks": 3417,
+      "evidence_verbatim_rate": 1.0,
+      "string_evidence_recall_valid": true,
+      "test_questions_answerable": 1804,
+      "metrics": {
+        "recall@5": {
+          "mean": 0.7077,
+          "ci95": [
+            0.6951,
+            0.7208
+          ],
+          "n": 1804,
+          "undefined": 0
+        },
+        "recall@10": {
+          "mean": 0.8419,
+          "ci95": [
+            0.8308,
+            0.8527
+          ],
+          "n": 1804,
+          "undefined": 0
+        },
+        "recall@50": {
+          "mean": 0.9508,
+          "ci95": [
+            0.9445,
+            0.9571
+          ],
+          "n": 1804,
+          "undefined": 0
+        },
+        "ndcg@10": {
+          "mean": 0.7345,
+          "ci95": [
+            0.7238,
+            0.7455
+          ],
+          "n": 1804,
+          "undefined": 0
+        },
+        "evidence_recall@10": {
+          "mean": 0.6569,
+          "ci95": [
+            0.643,
+            0.6705
+          ],
+          "n": 1804,
+          "undefined": 0
+        }
+      },
+      "primary_recall_by_query_type": {
+        "comparison": {
+          "mean": 0.8825,
+          "ci95": [
+            0.8664,
+            0.899
+          ],
+          "n": 685,
+          "undefined": 0
+        },
+        "multi_hop": {
+          "mean": 0.7617,
+          "ci95": [
+            0.7446,
+            0.7782
+          ],
+          "n": 653,
+          "undefined": 0
+        },
+        "temporal": {
+          "mean": 0.8945,
+          "ci95": [
+            0.8777,
+            0.9134
+          ],
+          "n": 466,
+          "undefined": 0
+        }
+      },
+      "seconds": {
+        "chunking": 7.41,
+        "queries": 20.13
+      }
+    },
+    {
+      "dataset": "graphrag_bench_medical",
+      "dataset_version": "7d36a7eef7f0",
+      "chunks": 490,
+      "evidence_verbatim_rate": 0.0045,
+      "string_evidence_recall_valid": false,
+      "test_questions_answerable": 1649,
+      "metrics": {
+        "recall@5": null,
+        "recall@10": null,
+        "recall@50": null,
+        "ndcg@10": null,
+        "evidence_recall@10": null
+      },
+      "primary_recall_by_query_type": {
+        "creative": null,
+        "global": null,
+        "multi_hop": null,
+        "single_hop": null
+      },
+      "seconds": {
+        "chunking": 1.35,
+        "queries": 0.68
+      }
+    },
+    {
+      "dataset": "graphrag_bench_novel",
+      "dataset_version": "5b2dfedc2f82",
+      "chunks": 2536,
+      "evidence_verbatim_rate": 0.0075,
+      "string_evidence_recall_valid": false,
+      "test_questions_answerable": 1609,
+      "metrics": {
+        "recall@5": null,
+        "recall@10": null,
+        "recall@50": null,
+        "ndcg@10": null,
+        "evidence_recall@10": null
+      },
+      "primary_recall_by_query_type": {
+        "creative": null,
+        "global": null,
+        "multi_hop": null,
+        "single_hop": null
+      },
+      "seconds": {
+        "chunking": 6.16,
+        "queries": 4.07
+      }
+    }
+  ],
+  "r1_rule_router": {
+    "nq": {
+      "accuracy": {
+        "mean": 0.9675,
+        "ci95": [
+          0.95,
+          0.985
+        ],
+        "n": 400,
+        "undefined": 0
+      },
+      "label_distribution": {
+        "single_hop": 400
+      },
+      "confusion_top": [
+        [
+          "single_hop->multi_hop",
+          10
+        ],
+        [
+          "single_hop->comparison",
+          3
+        ]
+      ]
+    },
+    "hotpotqa": {
+      "accuracy": {
+        "mean": 0.4525,
+        "ci95": [
+          0.4188,
+          0.4875
+        ],
+        "n": 800,
+        "undefined": 0
+      },
+      "label_distribution": {
+        "multi_hop": 637,
+        "comparison": 163
+      },
+      "confusion_top": [
+        [
+          "multi_hop->single_hop",
+          249
+        ],
+        [
+          "multi_hop->temporal",
+          124
+        ],
+        [
+          "multi_hop->comparison",
+          41
+        ],
+        [
+          "comparison->single_hop",
+          10
+        ],
+        [
+          "comparison->multi_hop",
+          8
+        ]
+      ]
+    },
+    "musique": {
+      "accuracy": {
+        "mean": 0.5417,
+        "ci95": [
+          0.5,
+          0.5896
+        ],
+        "n": 480,
+        "undefined": 0
+      },
+      "label_distribution": {
+        "multi_hop": 480
+      },
+      "confusion_top": [
+        [
+          "multi_hop->single_hop",
+          169
+        ],
+        [
+          "multi_hop->temporal",
+          40
+        ],
+        [
+          "multi_hop->comparison",
+          11
+        ]
+      ]
+    },
+    "multihop_rag": {
+      "accuracy": {
+        "mean": 0.4543,
+        "ci95": [
+          0.4333,
+          0.4743
+        ],
+        "n": 2045,
+        "undefined": 0
+      },
+      "label_distribution": {
+        "multi_hop": 653,
+        "comparison": 685,
+        "null": 241,
+        "temporal": 466
+      },
+      "confusion_top": [
+        [
+          "multi_hop->comparison",
+          231
+        ],
+        [
+          "comparison->multi_hop",
+          221
+        ],
+        [
+          "temporal->comparison",
+          129
+        ],
+        [
+          "null->comparison",
+          108
+        ],
+        [
+          "multi_hop->temporal",
+          97
+        ]
+      ]
+    },
+    "graphrag_bench_medical": {
+      "accuracy": {
+        "mean": 0.5233,
+        "ci95": [
+          0.5003,
+          0.5464
+        ],
+        "n": 1649,
+        "undefined": 0
+      },
+      "label_distribution": {
+        "global": 231,
+        "multi_hop": 407,
+        "single_hop": 878,
+        "creative": 133
+      },
+      "confusion_top": [
+        [
+          "multi_hop->single_hop",
+          296
+        ],
+        [
+          "global->single_hop",
+          163
+        ],
+        [
+          "multi_hop->comparison",
+          86
+        ],
+        [
+          "creative->single_hop",
+          68
+        ],
+        [
+          "creative->global",
+          59
+        ]
+      ]
+    },
+    "graphrag_bench_novel": {
+      "accuracy": {
+        "mean": 0.3195,
+        "ci95": [
+          0.2964,
+          0.3431
+        ],
+        "n": 1609,
+        "undefined": 0
+      },
+      "label_distribution": {
+        "global": 290,
+        "multi_hop": 488,
+        "single_hop": 777,
+        "creative": 54
+      },
+      "confusion_top": [
+        [
+          "single_hop->multi_hop",
+          221
+        ],
+        [
+          "multi_hop->single_hop",
+          196
+        ],
+        [
+          "single_hop->temporal",
+          174
+        ],
+        [
+          "global->multi_hop",
+          128
+        ],
+        [
+          "multi_hop->comparison",
+          58
+        ]
+      ]
+    }
+  },
+  "r2_tfidf_svm_ragrouter": {
+    "n": 7727,
+    "labels": {
+      "single_hop": 2320,
+      "multi_hop": 4086,
+      "global": 1321
+    },
+    "five_fold": {
+      "accuracy": 0.9356800828264527,
+      "macro_f1": 0.9314124167208816
+    },
+    "leave_one_domain_out": {
+      "accuracy": 0.65872913161641,
+      "macro_f1": 0.6713718325314745,
+      "folds": [
+        {
+          "n": 1896,
+          "accuracy": 0.46624472573839665,
+          "macro_f1": 0.4565669600446043,
+          "held_out": "graphragBench_medical"
+        },
+        {
+          "n": 3356,
+          "accuracy": 0.6337902264600715,
+          "macro_f1": 0.6583082902815345,
+          "held_out": "musique"
+        },
+        {
+          "n": 1198,
+          "accuracy": 0.7871452420701168,
+          "macro_f1": 0.7964205198383135,
+          "held_out": "quality"
+        },
+        {
+          "n": 1277,
+          "accuracy": 0.889584964761159,
+          "macro_f1": 0.8854975193400944,
+          "held_out": "ultraDomain_legal"
+        }
+      ]
+    },
+    "reference": "Bansal & Agarwal 2026 report 93.2 % accuracy / 0.928 macro-F1 (TF-IDF + SVM on RAGRouter-Bench); protocol details may differ"
+  }
+}

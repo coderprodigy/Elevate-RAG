@@ -1,0 +1,11 @@
+id: E1
+question: RQ1
+description: Vector baselines V0–V4 on all datasets (V4 = reference vector baseline).
+pipeline: ../pipelines/reference.yaml
+datasets: [nq, hotpotqa, musique, multihop_rag, graphrag_bench_medical, graphrag_bench_novel]
+variants:
+  - {name: V0, mode: v0}
+  - {name: V1, mode: v1}
+  - {name: V2, mode: v2}
+  - {name: V3, mode: v3}
+  - {name: V4, mode: v4}

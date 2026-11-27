@@ -1,0 +1,219 @@
+# Architecture & Implementation Decisions
+
+Each entry: context → decision → alternatives considered → consequences. IDs are referenced
+from code comments and the traceability matrix.
+
+## D-01 Python 3.12, uv, `exclude-newer` date gate
+- **Decision:** Python 3.12 virtualenv managed by `uv`; `pyproject.toml` sets
+  `[tool.uv] exclude-newer = 2026-11-12`, so every resolved package is ≥ 2 weeks old at kickoff.
+  `uv.lock` freezes exact versions.
+- **Alternatives:** hand-pinning each dependency (error-prone); Python 3.14 (LightRAG supports it, but
+  several scientific wheels lag).
+- **Consequence:** upgrading means deliberately moving the date and re-locking.
+
+## D-02 LightRAG 1.5.7 is the graph engine; Elevate-RAG owns the chunk store
+- **Context:** the plan requires one shared index, identical chunks for every pipeline, and "Phase 1
+  as its own module that reads LightRAG's chunk table".
+- **Decision:** Elevate-RAG chunks documents once (`indexing/chunker.py`) and feeds those exact
+  chunks to LightRAG through `LightRAG.ainsert_custom_chunks(full_text, chunks, doc_id)`.
+  LightRAG's chunk ID is reproduced with its public helper
+  `lightrag.utils_pipeline.make_custom_chunk_id(doc_id, text)`, giving a bijection between
+  Elevate-RAG chunk IDs and LightRAG chunk IDs. Vector baselines read the same chunk store.
+- **Alternatives:** (a) `ainsert` (LightRAG re-chunks with its own fixed-token splitter; chunk
+  identity would differ from V1–V4); (b) re-implementing the graph pipeline natively (duplicates
+  LightRAG, violates the spec).
+- **Risk:** `ainsert_custom_chunks` is marked "deprecated" in a comment but is the documented,
+  journaled path for caller-chunked content in 1.5.7. A regression test
+  (`tests/integration/test_lightrag_adapter.py`) fails loudly if the behaviour or ID scheme changes.
+
+## D-03 Graph retrieval through `aquery_data`, generation through Elevate-RAG
+- **Decision:** graph modes call `LightRAG.aquery_data(query, QueryParam(mode=...))`, which returns
+  the structured entities, relations and chunks LightRAG would have sent to its LLM. Elevate-RAG
+  then applies the *shared* reranker, *shared* token budget and *shared* generation prompt.
+  LightRAG's internal reranker is disabled (`enable_rerank=False`).
+- **Why:** this is the only way to keep prompt, budget and reranker identical across V0–V4 and all
+  LightRAG modes (plan protocol rule 1) while reusing LightRAG's retrieval logic unchanged.
+- **Consequence:** LightRAG's own answer prompt is not used. E2 therefore measures *retrieval
+  mode*, not LightRAG's prompt engineering — documented as a deliberate control.
+
+## D-04 Vector baselines are implemented natively; `naive` remains LightRAG's
+- **Decision:** V1 (BM25), V2 (dense), V3 (RRF k=60), V4 (V3 + cross-encoder) live in
+  `retrieval/`. V2 uses the *same* cached embeddings LightRAG stores, so V2 and LightRAG `naive`
+  differ only in the vector store / top-k plumbing. Both are reported.
+- **BM25:** own implementation (Okapi BM25, k1=0.9, b=0.4 — Pyserini defaults) over the shared
+  tokenizer; deterministic tie-break by chunk ID. Avoids an extra dependency and makes scores
+  auditable.
+
+## D-05 Storage adapters: two layers
+- **Decision:** (1) Level-B experiments swap LightRAG's own storage classes
+  (`QdrantVectorDBStorage`, `MilvusVectorDBStorage`, `PGVectorStorage`, `FaissVectorDBStorage`,
+  `Neo4JStorage`, `MemgraphStorage`, `PGGraphStorage`, `NetworkXStorage`) by config — no
+  re-implementation. (2) Level-A micro-benchmarks and V2–V4 dense retrieval use small Elevate-RAG
+  adapters (`storage/vector/*`, `storage/graph/*`) so each database can be timed in isolation.
+- **Fallbacks:** `exact` (numpy) vector store and `networkx` graph store need no services. A run
+  whose config names Qdrant never silently falls back: connection failure is a hard error (FR-DB7).
+
+## D-06 Token counting with tiktoken `o200k_base`
+- LightRAG 1.5.7 tokenises with tiktoken for `gpt-4o-mini` (= `o200k_base`). Using the same
+  encoding for chunking, budgets and cost estimates keeps all token numbers comparable.
+  Provider-reported usage (when available) is recorded separately as *actual* tokens.
+
+## D-07 Shared reranking and context budget across heterogeneous modes
+- **Context:** graph modes return entity profiles and relation descriptions as well as chunks.
+- **Decision:** context is a list of typed items (`chunk`, `entity`, `relation`, `community`).
+  The shared reranker scores **chunk** items for every mode that has a reranker. One token budget
+  (reference 8,192; ablations 4,096 / 16,384) is enforced by `generation/context.py`: KG items may
+  use at most `kg_share` (default 0.5) of the budget, unused KG budget flows to chunks; items are
+  never cut mid-sentence-free — an item that does not fit is truncated at a token boundary only if
+  ≥ 64 tokens remain, otherwise skipped. Vector modes get the full budget for chunks.
+- **Alternative:** rerank KG items with the cross-encoder too — rejected: cross-encoders are
+  trained on passages, not entity profiles, and would distort LightRAG's graph ranking.
+
+## D-08 Router candidate modes and cost order
+- Router chooses among a configurable set, default `["vector", "local", "global", "mix"]` where
+  `vector` = V4. The oracle's "cheapest" uses measured mean tokens per mode on the dev split;
+  configured static order (`vector < local < global < hybrid < mix`) only breaks ties.
+
+## D-09 Determinism and the Claude temperature restriction
+- Current Claude models reject `temperature`, `top_p`, `top_k` (API version 2026-10-21) and do not
+  allow thinking to be disabled on Opus 5.5 / Sonnet 5.5. The Anthropic provider therefore omits
+  sampling parameters, uses `output_config.effort` (configurable, default `low` for
+  extraction/routing) and records `sampling_controls="unsupported"` in every call record.
+  Reproducibility of Claude-backed results relies on the response cache (D-10).
+- OpenAI-compatible endpoints (vLLM, Ollama, llama.cpp, OpenAI) receive `temperature=0` and `seed`.
+
+## D-10 Caching: SQLite key-value store, content-hashed keys
+- One SQLite file per namespace (`embeddings`, `llm`, `rerank`, `retrieval`). Keys are SHA-256 of a
+  canonical JSON of *everything* that affects the output (provider, model, revision, prompt
+  version, parameters, input). Corrupt rows are detected (JSON decode / checksum), deleted and
+  recomputed. Cache hits are flagged in call records so benchmarks can separate them.
+- **Alternative:** diskcache / Redis — extra dependency or service for no benefit at this scale.
+
+## D-11 No silent server-side model fallback
+- Anthropic's server-side `fallbacks` would answer some requests with a *different model*, which
+  breaks "log the exact model ID of every call" (plan protocol rule 2). It is **off** by default and
+  configurable; the provider logs the model actually reported in each response and treats a
+  `refusal` stop reason as a recorded failure.
+
+## D-12 Dataset sources (verified 2026-11-26)
+| Dataset | Source | Notes |
+|---|---|---|
+| NQ | `florin-hf/nq_open_gold` (dev) | NQ-open questions with gold Wikipedia passage; distractors = other questions' gold passages, deduplicated by `idx_gold_in_corpus` |
+| HotpotQA | `hotpotqa/hotpot_qa` distractor / validation | dev is all `level=hard`; corpus = pooled context paragraphs of the sampled questions |
+| MuSiQue | `bdsaglam/musique` `musique_full_v1.0_dev.jsonl` | contains answerable + unanswerable; corpus = pooled paragraphs |
+| MultiHop-RAG | `yixuantt/MultiHopRAG` | 609 news articles, 2,556 queries; gold docs by URL, gold facts as evidence strings |
+| GraphRAG-Bench | `GraphRAG-Bench/GraphRAG-Bench` | novel + medical corpora; evidence sentences as gold strings |
+| RAGRouter-Bench | `Chaplain0908/RAGRouter` | JSONL, labels `single_hop / multi_hop / summary` |
+
+## D-13 Gold evidence: document IDs and evidence strings
+- Questions carry `gold_doc_ids` and/or `gold_evidence`. Recall@k / nDCG@10 use document IDs
+  where they exist; evidence-string recall (normalised containment, or token-recall ≥ 0.8 for long
+  facts) is used where gold is text (GraphRAG-Bench, RAGRouter-Bench, MultiHop-RAG facts).
+
+## D-14 External reference systems are isolated
+- Microsoft GraphRAG, HippoRAG 2, LlamaIndex PGI and Neo4j GraphRAG cannot share LightRAG's
+  internal index. They are integrated through a *predictions contract*: an external run writes
+  per-question JSONL (`question_id, answer, contexts, tokens, latency`) that the same evaluator
+  scores. They are never mixed into within-LightRAG mode comparisons.
+
+## D-15 Judge model must be chosen, never defaulted
+- The proposal's generators span Claude, Gemma and Qwen. The judge must come from another
+  family. No judge model ID is shipped as default; `experiments validate` fails until
+  `models.judge` is set and its family differs from all generator families in the run.
+
+## D-16 Local hardware limits (this workstation)
+- Apple M-series, 16 GB RAM, ~16 GB free disk, Docker installed but daemon not running, no API
+  credentials in the environment. Consequences: the 35B mid-tier generator cannot run locally;
+  Qwen3-Embedding-8B is not practical; real experiments require either API credentials or a GPU
+  host serving an OpenAI-compatible endpoint. The offline demo uses deterministic providers and
+  is labelled as such in every output.
+
+## D-17 Git policy for this session
+- The user instructed: **do not push or commit anything**. All work stays uncommitted in the
+  `nova` worktree. (The spec allowed local commits; the explicit user instruction overrides it.)
+
+## D-18 Offline providers are real algorithms, not stubs
+- `hash` embedder (feature hashing of word n-grams, L2-normalised), `lexical` reranker (BM25-style
+  query-passage overlap), `extractive` generator (picks the best-supported sentence, cites it, or
+  refuses when overlap is below a threshold) and `heuristic` extractor (capitalised-phrase entities
+  + sentence co-occurrence relations in LightRAG's delimiter format). They are deterministic, make
+  the full pipeline runnable offline, and are clearly labelled as *not* research configurations.
+
+## D-19 LLM-graded RAG metrics implemented natively (RAGAS definitions, not the package)
+- **Context:** the plan names RAGAS for context recall/precision and faithfulness.
+- **Decision:** `evaluation/llm_metrics.py` implements the three RAGAS metric *definitions* on the
+  project's provider stack, so every grading call is cached, budget-checked and recorded in the
+  ledger. The `ragas` package (optional extra) routes calls through LangChain wrappers that bypass
+  both, and its result could not be verified here without API credentials.
+- **Consequence:** numbers are comparable to RAGAS in definition, not bit-identical. If the team
+  must report the `ragas` package itself, run it on the saved `scored.jsonl` contexts; this is
+  listed in KNOWN_ISSUES.
+
+## D-20 One LightRAG workspace per physical index
+- **Found by testing:** LightRAG keeps process-wide shared dictionaries keyed by
+  `workspace:namespace`. With the default empty workspace, two indexes opened in one process
+  (e.g. the experiment runner moving from dataset A to B) share document status and graph state,
+  and LightRAG then silently skips "already committed" documents.
+- **Decision:** `workspace = "elevate_" + hash(resolved index path)`. Regression test:
+  `test_two_indexes_in_one_process_are_isolated`.
+
+## D-21 PostgreSQL graph = `PGTableGraphStorage`
+- LightRAG's `PGGraphStorage` requires the Apache AGE extension (absent from the pinned pgvector
+  image). `PGTableGraphStorage` stores the graph in plain relational tables, which is exactly the
+  plan's "PostgreSQL (graph tables): tests whether a dedicated graph DB is needed at all".
+
+## D-22 Crash-safe JSONL
+- A crash mid-write leaves a truncated last line without a newline; appending after it would glue
+  the next row onto it and corrupt the file mid-way. `run_questions` calls
+  `repair_jsonl_tail` before resuming (found by `test_run_questions_resumes_after_crash`).
+
+## D-23 R1 rule set includes relation-of-entity chains
+- "the founder/spouse/capital/director of X" is the canonical bridge pattern of 2-hop questions;
+  the first rule set missed it. Added as an explicit, separately reported feature
+  (`relational_of`).
+
+## D-24 Self-hosted models declare price 0 explicitly
+- `openai-compatible` endpoints are paid or free depending on who hosts them. A provider with no
+  price is "unknown" (blocked when the cap is 0; cost reported as missing). Self-hosted configs set
+  `price_*_per_mtok: 0.0` explicitly; set a GPU cost per Mtok if the team wants it counted.
+
+## D-25 Figures: small multiples instead of colour-coded series for many variants
+- The central RQ2 figure can have 10+ variants; colour slots run out at 8 and series would be
+  silently dropped. It is drawn as one panel per query type with labelled rows, so identity never
+  depends on colour.
+
+## D-26 Offline re-preparation
+- **Found in use:** a DNS outage made `data prepare` fail for datasets whose files were already
+  downloaded and verified, because the Hub API was queried for checksums first.
+- **Decision:** each file's size/SHA-256/blob ID at the pinned revision is cached in
+  `<file>.meta.json` at first download (immutable for a pinned revision); later runs re-hash the
+  file against it without network. Regression test:
+  `test_download_reuses_verified_files_without_network`.
+
+## D-27 Project owner decisions (2026-11-26)
+- **Providers available:** OpenAI and Anthropic (Claude).
+- **Budget: $0 — no paid calls.** `budget.max_usd` stays 0, so the cap blocks every OpenAI/Claude
+  call before it is made. Only free local models may run; the reference configuration
+  (Claude Haiku extraction, Qwen3.6-35B generation) therefore cannot run as specified.
+- **Judge:** undecided. Recommendation when budget allows: an OpenAI model as judge with Claude +
+  open models as generators (satisfies the different-family rule, D-15).
+- **Annotators:** undecided (needed only for G3 audit, judge validation, failure analysis).
+- **Docker:** approved. Local DB passwords were generated into a new git-ignored `.env`
+  (no API keys written); per-container memory set to 2 GB because Docker Desktop has ~8 GB.
+
+## D-28 Local models stopped for disk space (owner decision, 2026-11-26)
+- Free disk fell to ~4 GB (another Docker project shares the machine); the local model plan needs
+  ~6 GB. Owner chose to stop local models. `configs/pipelines/local_free.yaml` stays as the
+  ready-to-run $0 configuration (Qwen2.5-3B-Instruct generator/extractor, Llama-3.2-3B judge from
+  a different family, bge-small embedder, bge-reranker-v2-m3) for when ≥ 10 GB is free.
+
+## D-29 Deployment shape and location-independent run identity (2026-11-26)
+
+* **Decision:** deploy as a CLI Docker image next to the compose databases, with all mutable state
+  on one mounted volume (`/data`) and DB ports bound to localhost; storage locations come from the
+  environment and are excluded from `config_hash()`.
+* **Why:** the platform is a batch research tool, not a service, so no inbound ports are needed.
+  Run ids must identify the *experiment*, not where its files live, or moving data between a
+  laptop and EC2 silently invalidates resumable runs.
+* **Alternatives:** an HTTP API service (no requirement for one; adds an attack surface);
+  keeping paths in the hash (breaks resume across machines).

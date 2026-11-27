@@ -1,0 +1,19 @@
+# OFFLINE DEMO — deterministic stand-in providers (D-18). Results are NOT research results.
+name: demo-offline
+dataset: synthetic
+demo: true
+models:
+  embedder: {provider: hash, model: hash-384, dimension: 384, family: offline}
+  reranker: {provider: lexical, model: bm25-overlap, family: offline}
+  extractor: {provider: offline, model: heuristic-extractor, family: offline}
+  keyword: {provider: offline, model: heuristic-keywords, family: offline}
+  generator: {provider: offline, model: extractive-generator, family: offline}
+  router_llm: {provider: offline, model: rule-router, family: offline}
+  judge: {provider: offline, model: reference-match-judge, family: offline-judge}
+vector_store: {backend: exact}
+retrieval: {candidates: 20, final_k: 5, context_budget: 2048}
+resolution: {enabled: true, similarity_threshold: 0.95}
+budget: {max_usd: 0}
+data_dir: demo_output/data
+cache_dir: demo_output/cache
+index_dir: demo_output/indexes

@@ -1,0 +1,18 @@
+# Runs on a laptop CPU (e.g. 16 GB Apple Silicon): small open embedder + reranker; LLM roles still
+# need an API key or an OpenAI-compatible server. A *factor variant* of the reference (E5), not the
+# reference itself.
+extends: local_dev.yaml
+name: cpu-small
+models:
+  embedder:
+    provider: sentence-transformers
+    model: BAAI/bge-small-en-v1.5
+    revision: 5c38ec7c405ec4b44b94cc5a9bb96e735b38267a
+    dimension: 384
+    family: bge
+    params: {query_prompt_name: null}  # replaces the inherited Qwen prompt name
+  reranker:
+    provider: cross-encoder
+    model: BAAI/bge-reranker-v2-m3
+    revision: 953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e
+    family: bge

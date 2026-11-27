@@ -1,0 +1,32 @@
+id: E5
+question: RQ5
+description: >
+  One factor at a time from the reference (mode mix). Extractor comparisons are in
+  E5_extractors.yaml (two datasets only).
+pipeline: ../pipelines/reference.yaml
+datasets: [nq, hotpotqa, musique, multihop_rag, graphrag_bench_medical, graphrag_bench_novel]
+variants:
+  - {name: reference, mode: mix}
+  - name: emb-bge-small
+    mode: mix
+    overrides:
+      models.embedder: {provider: sentence-transformers, model: BAAI/bge-small-en-v1.5, revision: 5c38ec7c405ec4b44b94cc5a9bb96e735b38267a, dimension: 384, family: bge}
+  - name: emb-minilm
+    mode: mix
+    overrides:
+      models.embedder: {provider: sentence-transformers, model: sentence-transformers/all-MiniLM-L6-v2, revision: 1110a243fdf4706b3f48f1d95db1a4f5529b4d41, dimension: 384, family: minilm}
+  - name: emb-qwen3-8b
+    mode: mix
+    overrides:
+      models.embedder: {provider: sentence-transformers, model: Qwen/Qwen3-Embedding-8B, revision: 1d8ad4ca9b3dd8059ad90a75d4983776a23d44af, dimension: 4096, family: qwen, params: {query_prompt_name: query}}
+  - name: rerank-none
+    mode: mix
+    overrides: {models.reranker: null}
+  - name: gen-gemma4-12b
+    mode: mix
+    overrides:
+      models.generator: {provider: openai-compatible, model: google/gemma-4-12B-it, revision: 43c9d014b231474fa7212dbb48a762566c2b255d, base_url: "${OPENAI_COMPAT_BASE_URL}", family: gemma, price_input_per_mtok: 0.0, price_output_per_mtok: 0.0}
+  - name: gen-sonnet
+    mode: mix
+    overrides:
+      models.generator: {provider: anthropic, model: claude-sonnet-5-5, family: claude, params: {effort: low}, price_input_per_mtok: 2.0, price_output_per_mtok: 10.0}

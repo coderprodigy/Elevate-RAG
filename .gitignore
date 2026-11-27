@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Large / generated runtime artefacts
+data/raw/
+data/processed/
+data/cache/
+indexes/
+runs/
+results/runs/
+results/benchmarks/raw/
+models/
+*.sqlite
+*.sqlite3
+*.graphml
+infrastructure/docker/volumes/
+demo_output/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

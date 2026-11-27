@@ -1,0 +1,15 @@
+id: E5-extractor
+question: RQ5
+description: Extraction LLM comparison — re-indexing is costly, so only two datasets (plan).
+pipeline: ../pipelines/reference.yaml
+datasets: [multihop_rag, graphrag_bench_medical]
+variants:
+  - {name: ext-haiku, mode: mix}
+  - name: ext-sonnet
+    mode: mix
+    overrides:
+      models.extractor: {provider: anthropic, model: claude-sonnet-5-5, family: claude, params: {effort: low}, price_input_per_mtok: 2.0, price_output_per_mtok: 10.0}
+  - name: ext-qwen-local
+    mode: mix
+    overrides:
+      models.extractor: {provider: openai-compatible, model: Qwen/Qwen3.6-35B-A3B, revision: 345d467b117d1fd5eda9b879a5988de9ae5f47a7, base_url: "${OPENAI_COMPAT_BASE_URL}", family: qwen, price_input_per_mtok: 0.0, price_output_per_mtok: 0.0}

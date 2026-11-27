@@ -1,0 +1,22 @@
+id: A
+question: ablations
+description: >
+  A1 chunk size, A2 entity-merge threshold, A3 context budget (isolates "more context" from
+  "better structure"), A4 community layer, plus graph depth — all on MultiHop-RAG, mode mix.
+pipeline: ../pipelines/reference.yaml
+datasets: [multihop_rag]
+variants:
+  - {name: reference, mode: mix}
+  - {name: A1-chunk256, mode: mix, overrides: {chunking.chunk_tokens: 256, chunking.overlap_tokens: 32}}
+  - {name: A1-chunk1024, mode: mix, overrides: {chunking.chunk_tokens: 1024}}
+  - {name: A2-merge-0.85, mode: mix, overrides: {resolution.similarity_threshold: 0.85}}
+  - {name: A2-merge-0.97, mode: mix, overrides: {resolution.similarity_threshold: 0.97}}
+  - {name: A2-merge-off, mode: mix, overrides: {resolution.enabled: false}}
+  - {name: A3-budget4k, mode: mix, overrides: {retrieval.context_budget: 4096}}
+  - {name: A3-budget16k, mode: mix, overrides: {retrieval.context_budget: 16384}}
+  - {name: A3-budget4k-v4, mode: v4, overrides: {retrieval.context_budget: 4096}}
+  - {name: A3-budget16k-v4, mode: v4, overrides: {retrieval.context_budget: 16384}}
+  - {name: A4-community, mode: global, overrides: {community.enabled: true}}
+  - {name: A4-no-community, mode: global}
+  - {name: depth-2hop, mode: local, overrides: {retrieval.graph_depth: 2}}
+  - {name: depth-1hop, mode: local}

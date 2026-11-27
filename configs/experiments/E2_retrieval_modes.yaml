@@ -1,0 +1,15 @@
+id: E2
+question: RQ2
+description: >
+  LightRAG retrieval modes vs the V4 reference, same chunks/embeddings/reranker/budget/prompt.
+  External reference systems (Microsoft GraphRAG, HippoRAG 2) run outside this controlled block
+  through the predictions contract (DECISIONS D-14).
+pipeline: ../pipelines/reference.yaml
+datasets: [nq, hotpotqa, musique, multihop_rag, graphrag_bench_medical, graphrag_bench_novel]
+variants:
+  - {name: V4, mode: v4}
+  - {name: naive, mode: naive}
+  - {name: local, mode: local}
+  - {name: global, mode: global}
+  - {name: hybrid, mode: hybrid}
+  - {name: mix, mode: mix}
