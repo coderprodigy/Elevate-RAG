@@ -6,10 +6,10 @@ Workspace `Elevate-RAG-nova`, branch `nova`. **Nothing committed or pushed** (us
 
 | Check | Command | Result |
 |---|---|---|
-| Install from lockfile | `uv sync --locked --extra faiss` / `uv lock --check` | consistent (198 packages, `exclude-newer 2026-11-12`) |
-| Lint / format | `ruff check` / `ruff format --check` | clean (71 files) |
+| Install from lockfile | `uv sync --locked --extra faiss` / `uv lock --check` | consistent (199 packages, `exclude-newer 2026-11-12`) |
+| Lint / format | `ruff check` / `ruff format --check` | clean (72 files incl. scripts) |
 | Types | `mypy` (pydantic plugin) | clean (53 source files) |
-| Tests | `pytest -q --cov` (with live Qdrant + Neo4j) | **126 passed, 4 skipped**, 86 % line+branch coverage |
+| Tests | `pytest -q --cov` | **134 passed, 4 skipped**, 86 % line+branch coverage (live Qdrant/Neo4j tests deselected while Docker is broken; they passed on 2026-11-26) |
 | DB conformance | Qdrant + Neo4j live in Docker | **passed**; Milvus, pgvector, Memgraph, PG-graph not started → skipped with reason |
 | Offline demo | `elevate-rag demo` | 13 variants (V0–V4, 5 LightRAG modes, R1, R3, R4) end to end, report generated, all labelled DEMO |
 | Real datasets | `elevate-rag data prepare …` | all 7 prepared from pinned revisions, checksums verified (table below) |
@@ -45,6 +45,7 @@ Workspace `Elevate-RAG-nova`, branch `nova`. **Nothing committed or pushed** (us
 
 | Block | Software | Research run |
 |---|---|---|
+| G1 (end-to-end, real models) | done with $0 local models | **passed for the pipeline** (`results/g1/G1_RESULTS.md`); judge and extractor too weak for research numbers |
 | E1 (V0–V4) | ready; V1 retrieval measured on 4 datasets | **not run**: needs LLM (X1), judge (X2), budget (X3) |
 | E2 (modes) | ready | not run (X1–X3) |
 | E3 (routers) | ready; R1 and R2 classification measured on real labels | end-to-end not run (X1–X3) |
@@ -76,3 +77,44 @@ Workspace `Elevate-RAG-nova`, branch `nova`. **Nothing committed or pushed** (us
   demo in it. The image is **not yet built locally** (disk; see KNOWN_ISSUES).
 * `elevate-rag env` no longer crashes on a hung Docker daemon.
 * Checks: ruff + format clean (src, tests, scripts), mypy clean, **126 passed, 4 skipped**, 86 %.
+
+## Session 4 (2026-11-27): gate G1 with real local models
+
+* Ollama Qwen2.5-3B (generator/extractor) + Llama-3.2-3B (judge) + bge embedder/reranker, $0.
+* Graph built on 200 HotpotQA paragraphs (91 min): 1,026 entities, 355 relations, 60 % isolated.
+* Six variants on 20 questions (36 min). Judge accuracy 0.45–0.70, no significant difference vs
+  V4 after Holm. The 3B judge accepted clearly wrong answers → human κ check and a stronger
+  judge are required. Full write-up: `results/g1/G1_RESULTS.md`.
+* Five defects found and fixed (OpenMP clash, Ollama context truncation, extractor loops,
+  cache-distorted latency, deprecated merge argument). Docker's VM disk returns I/O errors, so
+  Qdrant/Neo4j were not used for G1 (see KNOWN_ISSUES).
+* Checks: ruff + mypy clean; **128 passed, 4 skipped** (2 live-DB tests deselected while Docker
+  is broken).
+
+## Session 5 (2026-11-27 overnight): G1 with 7B models, cluster readiness, clean-up
+
+* **G1 re-run with Qwen2.5-7B + Llama-3.1-8B** (`results/g1_7b/G1_7B_RESULTS.md`): graph 194 min,
+  six variants 62 min, $0. Judge accuracy 0.50–0.65, gold answer in 55–60 % of responses (3B run:
+  30–45 %), EM 0.25–0.35, no variant significantly different from V4. The 8B judge's verdicts
+  agree with the judge-free check far better than the 3B judge's; the 3B "mix wins" signal was
+  judge noise.
+* **Defects found and fixed (all regression-tested):**
+  1. run ids depended on model-server URLs, concurrency and timeouts → excluded (D-30);
+  2. `extends` leaked provider-specific params across providers (Anthropic `effort` sent to
+     Ollama) → child model roles with `model:` replace the parent role (D-31);
+  3. judge-sample items collided across runs answering the same question in the same mode →
+     keyed by run id; agreement checks the annotators labelled exactly the sample (D-34);
+  4. entity resolution, duplicate counting and G3 coverage missed space-stripped names (54 % of
+     7B entities) → spacing-insensitive entity key (D-35);
+  5. `judge_agreement` ignored its sample file; `fig_interaction` had an unused parameter (dead
+     code found by vulture).
+* **New:** `--pipeline/--datasets/--limit/--shard K/N` for experiments; `scripts/run_pipeline.sh`
+  (one command: build → validate → run → report); `scripts/download_models.py`;
+  `configs/pipelines/local_7b.yaml`, `cluster_gpu.yaml`, `cluster_gpu_7b.yaml`;
+  `configs/experiments/G1_smoke_local_7b.yaml`, `S0_cluster_smoke.yaml`;
+  `infrastructure/cluster/` (SLURM jobs, vLLM start-up, Apptainer definition, `env.sh`);
+  `docs/RUNNING.md`; `results/README.md`; CI shellcheck + cluster dry run.
+* **Cluster path:** dry-run and stub-tested only (no SLURM or GPU here). Tier S0 is the first
+  real test.
+* **Human annotation packets ready:** `results/g1*/judge_sample.csv`,
+  `results/g1*/triple_audit_sample.csv`.

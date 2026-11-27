@@ -21,7 +21,7 @@ from typing import Any
 import numpy as np
 
 from elevate_rag.config import VectorStoreConfig
-from elevate_rag.utils import ConfigError, StorageError
+from elevate_rag.utils import ConfigError, StorageError, guard_openmp
 
 Hit = tuple[str, float]
 
@@ -135,6 +135,7 @@ class FaissStore(VectorStore):
 
     def __init__(self, cfg: VectorStoreConfig, name: str, dim: int) -> None:
         super().__init__(cfg, name, dim)
+        guard_openmp("faiss")
         try:
             import faiss
         except ImportError as exc:

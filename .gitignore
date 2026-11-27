@@ -31,6 +31,10 @@ models/
 *.graphml
 infrastructure/docker/volumes/
 demo_output/
+*.sif
+.venv-vllm/
+slurm-*.out
+elevate-*.out
 
 # OS / editor
 .DS_Store

@@ -14,7 +14,7 @@ from elevate_rag.cache import KVCache
 from elevate_rag.config import ProviderConfig
 from elevate_rag.providers.base import UsageLedger, http_error_to_exception, price
 from elevate_rag.types import CallRecord
-from elevate_rag.utils import ConfigError, ProviderError, Tokenizer, word_tokens
+from elevate_rag.utils import ConfigError, ProviderError, Tokenizer, guard_openmp, word_tokens
 
 
 class BaseReranker:
@@ -85,6 +85,7 @@ class CrossEncoderReranker(BaseReranker):
 
     def __init__(self, cfg: ProviderConfig, **kw: Any) -> None:
         super().__init__(cfg, **kw)
+        guard_openmp("torch")
         try:
             from sentence_transformers import CrossEncoder
         except ImportError as exc:

@@ -100,6 +100,9 @@ class LightRAGConfig(_Strict):
     graph_storage: str = "NetworkXStorage"
     doc_status_storage: str = "JsonDocStatusStorage"
     entity_extract_max_gleaning: int = Field(1, ge=0, le=3)
+    # Output cap for one extraction call. Small local models can loop until the cap; keep
+    # prompt (~2-3.5k tokens) + this below the server's context window or it truncates.
+    extract_max_tokens: int = Field(4096, ge=256)
     force_llm_summary_on_merge: int = Field(8, ge=1)
     top_k: int = Field(40, ge=1)
     chunk_top_k: int = Field(20, ge=1)
@@ -165,6 +168,12 @@ class BudgetConfig(_Strict):
 
 
 LOCATION_FIELDS = frozenset({"data_dir", "cache_dir", "index_dir"})
+# Per-model settings that say *where/how* a model is reached, not what it outputs. A cluster job
+# gets a different node (and vLLM URL) on every submission; these must not change run ids.
+OPERATIONAL_MODEL_FIELDS = frozenset(
+    {"base_url", "api_key_env", "max_concurrency", "timeout_s", "max_retries"}
+)
+OPERATIONAL_LIGHTRAG_FIELDS = frozenset({"llm_max_async", "max_parallel_insert"})
 
 
 def default_dir(env_var: str, fallback: str) -> str:
@@ -193,9 +202,17 @@ class PipelineConfig(_Strict):
     demo: bool = False  # offline demonstration config — results are not research results
 
     def config_hash(self) -> str:
-        """Identity of the *experimental* configuration. Storage locations are excluded so a run
-        keeps its id (and stays resumable) when data is moved to another disk or machine."""
-        return stable_hash(self.model_dump(mode="json", exclude=set(LOCATION_FIELDS)))
+        """Identity of the *experimental* configuration. Storage locations and operational model
+        settings (endpoint URL, concurrency, timeouts) are excluded, so a run keeps its id (and
+        stays resumable) when data moves or a cluster job lands on another node."""
+        data = self.model_dump(mode="json", exclude=set(LOCATION_FIELDS))
+        for role in data["models"].values():
+            if isinstance(role, dict):
+                for k in OPERATIONAL_MODEL_FIELDS:
+                    role.pop(k, None)
+        for k in OPERATIONAL_LIGHTRAG_FIELDS:
+            data["lightrag"].pop(k, None)
+        return stable_hash(data)
 
     def index_key(self) -> str:
         """Identity of the *index*: corpus, chunking, embedder, extractor, resolution, community.
@@ -210,6 +227,7 @@ class PipelineConfig(_Strict):
                 "lightrag": self.lightrag.model_dump(
                     include={
                         "entity_extract_max_gleaning",
+                        "extract_max_tokens",
                         "force_llm_summary_on_merge",
                         "kv_storage",
                         "vector_storage",
@@ -268,8 +286,19 @@ def load_yaml_with_extends(path: Path, _seen: frozenset[Path] = frozenset()) -> 
             merged = deep_merge(
                 merged, load_yaml_with_extends(path.parent / parent, _seen | {path})
             )
-        data = deep_merge(merged, data)
+        data = merge_child_config(merged, data)
     return data
+
+
+def merge_child_config(parent: dict[str, Any], child: dict[str, Any]) -> dict[str, Any]:
+    """`extends` semantics: deep merge, except that a model role the child defines with its own
+    `model:` *replaces* the parent's role. Otherwise provider-specific settings leak across
+    providers (e.g. Anthropic's `effort` reaching an OpenAI-compatible server)."""
+    parent = copy.deepcopy(parent)
+    for role, spec in (child.get("models") or {}).items():
+        if isinstance(spec, dict) and "model" in spec:
+            (parent.get("models") or {}).pop(role, None)
+    return deep_merge(parent, child)
 
 
 def _expand_env(obj: Any) -> Any:

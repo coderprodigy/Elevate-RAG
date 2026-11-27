@@ -74,6 +74,26 @@ flowchart LR
   `BudgetExceededError`, which aborts the run instead of being recorded as a per-question error.
 * **Reproducibility.** Per-question rows carry run ID, dataset version, config hash, model IDs,
   calls (cached flag, tokens, cost, latency). Run manifests are immutable.
+* **Portable run identity.** `config_hash()` covers everything that can change an output and
+  nothing that only says where or how fast (storage paths, model-server URLs, concurrency,
+  timeouts; D-29, D-30), so a run resumes on another disk, machine or cluster node.
+* **Latency honesty.** Summaries compute latency only over queries whose LLM calls ran
+  (`latency_n`, `cache_hit_rate`), never from cache hits.
+
+## Execution environments
+
+The same CLI and configs run everywhere; only the pipeline config (which models, which storage)
+and the environment (paths, server URLs) change. See [RUNNING.md](RUNNING.md).
+
+| Environment | Model serving | Storage | Orchestration |
+|---|---|---|---|
+| laptop | Ollama (OpenAI-compatible) | exact/FAISS + NetworkX, or Docker Qdrant + Neo4j | `scripts/run_pipeline.sh` |
+| GPU workstation | vLLM | FAISS + NetworkX | `scripts/run_pipeline.sh` |
+| SLURM cluster | vLLM started inside each GPU job | FAISS + NetworkX | `infrastructure/cluster/submit.sh`: index job → experiment job array (`--shard K/N`) → report job |
+| EC2 | any | Docker databases on the instance | Docker image (`Dockerfile`) |
+
+Experiment specs are re-targeted without editing (`--pipeline`, `--datasets`, `--limit`), and the
+run id follows from the resulting config, so the same spec on two setups never collides.
 
 ## Data flow of one query record (`QueryRecord`)
 

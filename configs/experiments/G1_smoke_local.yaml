@@ -1,0 +1,20 @@
+id: G1
+question: G1
+description: >
+  Gate G1 (plan §Phases): the harness end to end on 20 real HotpotQA questions with real models.
+  $0 configuration (local_free.yaml: Qwen2.5-3B generator/extractor, Llama-3.2-3B judge, bge
+  embedder + reranker). Storage is in-process (exact vector search + NetworkX, LightRAG NanoVectorDB/NetworkX)
+  so the run needs no Docker; the Qdrant/Neo4j adapters are verified separately by the live
+  conformance tests. This checks that the pipeline, logging, costs and resume work. Its scores
+  are "small local models" numbers on 20 questions and answer no research question.
+pipeline: ../pipelines/local_free.yaml
+datasets: [hotpotqa_g1]
+split: all
+concurrency: 2
+variants:
+  - {name: V4, mode: v4, overrides: &stores {vector_store.backend: exact, lightrag.vector_storage: NanoVectorDBStorage, graph_store.backend: networkx, lightrag.graph_storage: NetworkXStorage}}
+  - {name: naive, mode: naive, overrides: *stores}
+  - {name: local, mode: local, overrides: *stores}
+  - {name: hybrid, mode: hybrid, overrides: *stores}
+  - {name: mix, mode: mix, overrides: *stores}
+  - {name: R1-rules, router: {level: rules}, overrides: *stores}

@@ -1,4 +1,5 @@
-.PHONY: install check lint format typecheck test cov demo db-up db-down db-ps image image-smoke
+.PHONY: install check lint format typecheck test cov demo db-up db-down db-ps image image-smoke \
+        cluster-dry
 
 COMPOSE = docker compose -f infrastructure/docker/docker-compose.yml --env-file .env
 TAG ?= latest
@@ -43,3 +44,7 @@ image:              ## application image; EXTRAS="databases local-models" adds t
 
 image-smoke:        ## offline demo inside the image (no credentials, no network)
 	docker run --rm --network none elevate-rag:$(TAG) demo --out /data/demo
+
+DRY_ROOT ?= /tmp/elevate-dry
+cluster-dry:        ## print the SLURM jobs `submit.sh smoke` would submit (no cluster needed)
+	ELEVATE_ROOT=$(DRY_ROOT) DRY_RUN=1 infrastructure/cluster/submit.sh smoke

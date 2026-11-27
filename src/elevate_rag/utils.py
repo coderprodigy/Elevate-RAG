@@ -44,6 +44,25 @@ class StorageError(ElevateError):
     pass
 
 
+def guard_openmp(loading: str) -> None:
+    """Refuse to load FAISS and PyTorch into one process on macOS.
+
+    The faiss-cpu and torch macOS wheels each bundle their own ``libomp``; the second one to
+    initialise aborts the process (OMP Error #15, seen as a segfault). The documented workaround,
+    KMP_DUPLICATE_LIB_OK, "may silently produce incorrect results", so we fail with advice instead.
+    ``loading`` is the library about to be imported: ``"faiss"`` or ``"torch"``.
+    """
+    if sys.platform != "darwin":
+        return
+    other = "torch" if loading == "faiss" else "faiss"
+    if other in sys.modules:
+        raise ConfigError(
+            "on macOS FAISS cannot share a process with local PyTorch models (sentence-transformers"
+            " embedder/reranker): their bundled OpenMP runtimes conflict and crash. Use "
+            "vector_store.backend=exact (or qdrant/milvus/pgvector), or API/hash models."
+        )
+
+
 # --------------------------------------------------------------------------- hashing
 
 

@@ -190,8 +190,27 @@ def summarize(scored: Sequence[dict[str, Any]]) -> dict[str, Any]:
     by_type: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in scored:
         by_type[r["scores"]["query_type"]].append(r)
+
+    # Latency only from queries whose LLM calls (keywords, generation, routing) all ran: a cached
+    # call returns in ~0 s, so a variant re-using another run's calls (e.g. a router routing to
+    # an already-run mode) would look far faster than it is. Cached embedding/rerank calls cost
+    # milliseconds and are ignored.
+    def llm_cache_hit(r: dict[str, Any]) -> bool:
+        return any(
+            c.get("cached") and not str(c.get("role", "")).startswith(("embed", "rerank"))
+            for c in r.get("calls", [])
+        )
+
+    calls = [
+        c
+        for r in scored
+        for c in r.get("calls", [])
+        if not str(c.get("role", "")).startswith(("embed", "rerank"))
+    ]
     lat = [
-        sum(v for k, v in r.get("timings", {}).items()) for r in scored if not r["scores"]["failed"]
+        sum(v for k, v in r.get("timings", {}).items())
+        for r in scored
+        if not r["scores"]["failed"] and not llm_cache_hit(r)
     ]
     costs = [r.get("cost_usd") for r in scored]
     return {
@@ -200,6 +219,10 @@ def summarize(scored: Sequence[dict[str, Any]]) -> dict[str, Any]:
         "efficiency": {
             "latency_p50_s": float(np.percentile(lat, 50)) if lat else None,
             "latency_p95_s": float(np.percentile(lat, 95)) if lat else None,
+            "latency_n": len(lat),
+            "cache_hit_rate": (
+                sum(bool(c.get("cached")) for c in calls) / len(calls) if calls else None
+            ),
             "prompt_tokens_mean": float(np.mean([r.get("prompt_tokens", 0) for r in scored])),
             "completion_tokens_mean": float(
                 np.mean([r.get("completion_tokens", 0) for r in scored])

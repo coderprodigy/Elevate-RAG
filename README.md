@@ -10,15 +10,18 @@ share the same reranker, token budget and generation prompt, so retrieval mode i
 variable. Experiments (E1–E6, A1–A4) are config-driven, resumable, cost-capped and report bootstrap
 CIs and paired tests.
 
-> **Status (2026-11-26):** the software is implemented and tested (126 tests, 86 % coverage;
-> Qdrant and Neo4j adapters verified against live servers). Datasets are prepared and model-free
-> baselines are measured. **No research experiment requiring an LLM has been run yet**: that
-> needs an API budget or a local model server, the judge-model choice and human annotators. See
-> [`docs/PROGRESS.md`](docs/PROGRESS.md) and [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).
+> **Status (2026-11-27):** software implemented and tested (CI: lint, types, tests with 86 %
+> coverage, Docker image, cluster dry run). Seven datasets prepared from pinned revisions;
+> model-free baselines measured. Gate G1, the first end-to-end run with real models at $0, passed
+> for the pipeline with 3B and with 7B/8B local models ([`results/`](results/README.md)).
+> **The research experiments E1–E6 have not been run yet**: they need GPU time (the cluster
+> setup is ready, untested on a real cluster) or an API budget, and two human annotators to
+> validate the judge. Details: [`docs/PROGRESS.md`](docs/PROGRESS.md),
+> [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).
 
 ## Quick start (offline, no credentials, ~20 s)
 
-Requires [uv](https://docs.astral.sh/uv/) (Python 3.12 is installed by uv if missing).
+Requires [uv](https://docs.astral.sh/uv/) (it installs Python 3.12 if missing).
 
 ```bash
 uv sync --locked --extra faiss       # venv from the lockfile
@@ -26,94 +29,61 @@ uv run elevate-rag demo              # synthetic corpus → index → all modes/
 open demo_output/report/REPORT.md    # every number is labelled DEMO (stand-in models)
 ```
 
-Or with Docker only: `make image && make image-smoke`.
+The demo uses deterministic stand-ins (hash embedder, lexical reranker, heuristic extractor,
+extractive generator). They exercise the real pipeline, LightRAG included, but are **not**
+research models. Docker only: `make image && make image-smoke`.
 
-## Deployment (AWS EC2)
+## Running for real
 
-The platform is a batch CLI. On a server it runs as a Docker image next to the database
-containers, with all state on one mounted data volume and no inbound ports except SSH.
-[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) covers instance sizing, security, setup and
-operations:
+**[docs/RUNNING.md](docs/RUNNING.md)** covers every setup step by step and how to reproduce each
+committed result:
 
-```bash
-bash scripts/ec2_setup.sh                       # Docker + Compose on Ubuntu 24.04
-cp .env.example .env && chmod 600 .env          # passwords, API keys
-make db-up && make image && make image-smoke    # databases, app image, offline self-test
-```
+| Where | Models | Entry point |
+|---|---|---|
+| Laptop / desktop | Ollama (Qwen2.5 3B/7B, Llama 3.x judge), $0 | `scripts/run_pipeline.sh` |
+| Workstation with NVIDIA GPUs | vLLM (Qwen3.6-35B-A3B, phi-4 judge), $0 | `scripts/run_pipeline.sh` |
+| College / HPC cluster (SLURM) | vLLM, sharded job arrays, Apptainer optional | `infrastructure/cluster/submit.sh` |
+| Any machine with API keys | Claude / OpenAI, hard spending cap | `elevate-rag experiment run` |
+| AWS EC2 | any of the above | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 
-The demo uses deterministic offline stand-ins (hash embedder, lexical reranker, heuristic
-extractor, extractive generator). They exercise the real pipeline, LightRAG included, but are
-**not** research models.
-
-## Research workflow
+The research workflow in one block (details and options in RUNNING.md):
 
 ```bash
-cp .env.example .env                 # fill in only what you use; .env is git-ignored
-uv run elevate-rag env               # Python, packages, Docker, which credentials are present
-
-# 1. Data (pinned Hugging Face revisions, checksums, 20 % dev / 80 % test, manifests)
-uv run elevate-rag data prepare all
-uv run elevate-rag data info hotpotqa
-
-# 2. Databases (reference = Qdrant + Neo4j; PROFILE=all for E4)
-make db-up
-
-# 3. Choose the judge (different model family from every generator) and a spending cap in
-#    configs/pipelines/reference.yaml, then pilot-index 5 % and extrapolate cost (plan §Risks)
-uv run elevate-rag index pilot configs/pipelines/reference.yaml --set dataset=multihop_rag
-
-# 4. Build and validate the graph (gate G3: answer-entity coverage ≥ 60 %; triple audit sample)
-uv run elevate-rag index build configs/pipelines/reference.yaml --set dataset=multihop_rag
-uv run elevate-rag index validate configs/pipelines/reference.yaml --set dataset=multihop_rag \
-    --audit-out results/audit/multihop_rag_triples.csv
-
-# 5. Experiments: validate → estimate → dry-run → run (completed runs are skipped on re-run)
-uv run elevate-rag experiment validate configs/experiments/E1_vector_baselines.yaml
-uv run elevate-rag experiment estimate configs/experiments/E2_retrieval_modes.yaml
-uv run elevate-rag experiment run configs/experiments/E2_retrieval_modes.yaml --dry-run
-uv run elevate-rag experiment run configs/experiments/E2_retrieval_modes.yaml
-
-# 6. Routers: train R2 on dev data only, then E3
-uv run elevate-rag experiment run configs/experiments/E3_labels_dev.yaml
-uv run elevate-rag router train runs/routers/r2-type --scheme type --dataset ragrouter
-uv run elevate-rag router train runs/routers/r2-outcome --scheme outcome --runs runs/E3-labels \
-    --dataset multihop_rag --dataset hotpotqa
-uv run elevate-rag router cv --dataset ragrouter --leave-one-dataset-out
-
-# 7. Level-A database benchmarks (matched recall@10 = 0.95 vs exact search)
-uv run elevate-rag bench vector configs/pipelines/reference.yaml --backends exact,faiss,qdrant,milvus,pgvector
-uv run elevate-rag bench graph configs/pipelines/reference.yaml --backends networkx,neo4j,memgraph,postgres
-
-# 8. Human validation (never fabricated): judge sample, triple audit, failure analysis
-uv run elevate-rag annotate judge-sample runs/E2/<run_dir> results/annotation/judge_sample.csv
-uv run elevate-rag annotate judge-agreement results/annotation/judge_sample.csv a.csv b.csv runs/E2/<run_dir>
-uv run elevate-rag annotate failures runs/E2/<run_dir> results/annotation/failures_local.csv
-
-# 9. Reports: tables, McNemar + Holm, figures
-uv run elevate-rag report --runs-root runs --out results/report --reference V4
+uv run elevate-rag data prepare all                                     # pinned, checksummed
+uv run elevate-rag index build  PIPELINE.yaml --set dataset=multihop_rag  # chunks, vectors, graph
+uv run elevate-rag index validate PIPELINE.yaml --set dataset=multihop_rag --audit-out triples.csv
+uv run elevate-rag experiment validate configs/experiments/E2_retrieval_modes.yaml --pipeline PIPELINE.yaml
+uv run elevate-rag experiment estimate configs/experiments/E2_retrieval_modes.yaml --pipeline PIPELINE.yaml
+uv run elevate-rag experiment run      configs/experiments/E2_retrieval_modes.yaml --pipeline PIPELINE.yaml
+uv run elevate-rag report --experiment E2 --out results/E2 --reference V4
 ```
 
-External reference systems (Microsoft GraphRAG, HippoRAG 2, LlamaIndex PGI, Neo4j GraphRAG) run
-with their own tooling and are scored through the same evaluator:
-`elevate-rag experiment external preds.jsonl --system hipporag2 --dataset musique`.
-
-Model-free measurements on real data (BM25 retrieval, rule and TF-IDF routers):
-`uv run python scripts/model_free_measurements.py`.
+Human validation (two annotators, never fabricated) and external systems (Microsoft GraphRAG,
+HippoRAG 2, …, scored by the same evaluator via `elevate-rag experiment external`) are in
+RUNNING.md as well.
 
 ## Configuration
 
-* `configs/pipelines/reference.yaml`: the plan's reference configuration with verified model IDs
-  and revisions. `local_dev.yaml` uses the same models without Docker; `cpu_small.yaml` runs on a
-  laptop CPU; `demo_offline.yaml` is offline.
-* `configs/experiments/*.yaml`: E1–E6 and A1–A4. Each variant changes one factor via dotted
-  overrides (`retrieval.context_budget: 4096`) or picks a mode/router.
-* `configs/pipelines/local_free.yaml`: a $0 configuration with small local models (Ollama) for
-  smoke-testing the full pipeline; its numbers are not comparable to the reference.
-* `--set key=value` overrides any field from the CLI.
-* Environment (`.env`, see [`.env.example`](.env.example)): API keys, database URLs and passwords,
-  and storage locations (`ELEVATE_DATA_DIR`, `ELEVATE_CACHE_DIR`, `ELEVATE_INDEX_DIR`,
-  `ELEVATE_RUNS_DIR`). Storage locations are not part of a run's identity, so moving data between
-  machines does not invalidate completed runs.
+* `configs/pipelines/`:
+
+  | Config | Use |
+  |---|---|
+  | `reference.yaml` | the plan's reference (needs an API budget and a judge choice) |
+  | `cluster_gpu.yaml`, `cluster_gpu_7b.yaml` | all-open models on vLLM, for GPU servers |
+  | `local_free.yaml`, `local_7b.yaml` | Ollama on a laptop, $0 |
+  | `local_dev.yaml`, `cpu_small.yaml` | reference variants without Docker / on a laptop CPU |
+  | `demo_offline.yaml` | offline stand-ins |
+
+  A config can `extends:` another; a model role the child defines with its own `model:` replaces
+  the parent's role entirely.
+* `configs/experiments/`: E1–E6, A1–A4, G1 (laptop gate) and S0 (cluster smoke tier). Each
+  variant changes one factor. `--pipeline`, `--datasets`, `--limit` and `--shard K/N` re-target a
+  spec without editing it.
+* `--set key=value` overrides any pipeline field from the CLI.
+* Environment (`.env`, see [`.env.example`](.env.example)): API keys, database passwords, model
+  server URLs and storage locations (`ELEVATE_DATA_DIR`, `ELEVATE_INDEX_DIR`, `ELEVATE_CACHE_DIR`,
+  `ELEVATE_RUNS_DIR`). Run ids depend only on what changes outputs: not on paths, server URLs,
+  concurrency or timeouts, so runs resume across disks, machines and cluster nodes.
 
 ## Repository layout
 
@@ -123,21 +93,23 @@ src/elevate_rag/
   indexing/      chunking and the shared chunk store
   retrieval/     BM25 and rank fusion
   graph/         LightRAG engine, entity resolution, graph quality, communities
-  storage/       vector (Exact, FAISS, Qdrant, Milvus, pgvector) and graph (NetworkX, Neo4j,
+  storage/       vector (exact, FAISS, Qdrant, Milvus, pgvector) and graph (NetworkX, Neo4j,
                  Memgraph, Postgres) adapters
   routing/       routers R0–R4, fallback, oracle
   generation/    context assembly (shared token budget) and the answer generator
   providers/     LLM / embedding / reranker clients, cost ledger, retries
   evaluation/    metrics, LLM judge, harness, human-annotation tooling
-  experiments/   experiment specs → resumable runs; external-system predictions
+  experiments/   experiment specs → resumable, shardable runs; external-system predictions
   reporting/     tables, paired tests, figures
   cli/           the `elevate-rag` command
 configs/         pipeline and experiment YAML
-infrastructure/  docker-compose for the databases
-scripts/         model-free measurements, EC2 host setup
+infrastructure/
+  docker/        docker-compose for the databases (Qdrant, Neo4j, Milvus, pgvector, Memgraph)
+  cluster/       SLURM jobs, vLLM start-up, Apptainer image definition, site settings (env.sh)
+scripts/         run_pipeline.sh, download_models.py, model-free measurements, EC2 setup
 tests/           unit, integration (live DBs, skipped when absent), end-to-end
-docs/            requirements, architecture, decisions, progress, deployment
-results/         committed results (model-free measurements); run outputs are git-ignored
+docs/            requirements, architecture, decisions, progress, running, deployment
+results/         committed results with write-ups; raw runs are git-ignored
 ```
 
 ## Development
@@ -146,16 +118,21 @@ results/         committed results (model-free measurements); run outputs are gi
 make check        # ruff + mypy + pytest (what CI runs)
 make cov          # coverage report
 make db-up        # live DBs, so the integration tests run instead of skipping
+make cluster-dry  # the SLURM jobs `submit.sh smoke` would submit (no cluster needed)
 ```
 
 Tests are offline. DB-service conformance tests run when `ELEVATE_*` URLs point at live services
-and are reported as skipped otherwise. CI (`.github/workflows/ci.yml`) runs lint, types and tests
-from the lockfile, and builds the Docker image and runs the offline demo inside it.
+and are reported as skipped otherwise. CI (`.github/workflows/ci.yml`) runs lint, format, types,
+shellcheck, a cluster dry run and the tests from the lockfile, and builds the Docker image and
+runs the offline demo inside it.
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
+| [docs/RUNNING.md](docs/RUNNING.md) | **how to run and reproduce everything**: laptop, GPU, cluster, API |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | running on AWS EC2: sizing, security, setup, operations |
+| [results/README.md](results/README.md) | every committed result, what it shows, how it was produced |
 | [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | requirements extracted from the plan and spec |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | components, invariants, data flow |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | decisions with rationale and alternatives |
@@ -163,7 +140,6 @@ from the lockfile, and builds the Docker image and runs the offline demo inside 
 | [docs/REQUIREMENTS_TRACEABILITY.md](docs/REQUIREMENTS_TRACEABILITY.md) | requirement → code → tests → status |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | what was verified, with evidence |
 | [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) | limitations, blockers, human-dependent tasks |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | running on AWS EC2: sizing, security, setup, operations |
 
 Dataset licences are listed by `elevate-rag data list`. Large data, indexes, caches and runs are
 git-ignored.

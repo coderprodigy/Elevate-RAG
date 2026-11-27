@@ -1,0 +1,6 @@
+experiment,dataset,variant,reference,n,diff,ci_low,ci_high,p,test,cohens_h,p_holm,significant
+G1-7B,hotpotqa_g1,R1-rules,V4,20,0.1,-0.09103716915825569,0.2910371691582557,0.625,mcnemar_exact,0.20135792079033066,1.0,False
+G1-7B,hotpotqa_g1,hybrid,V4,20,0.1,-0.09103716915825569,0.2910371691582557,0.625,mcnemar_exact,0.20135792079033066,1.0,False
+G1-7B,hotpotqa_g1,local,V4,20,0.15,-0.05904114427547513,0.3590411442754751,0.375,mcnemar_exact,0.3046926540153976,1.0,False
+G1-7B,hotpotqa_g1,mix,V4,20,0.05,-0.16803623552061248,0.2680362355206125,1.0,mcnemar_exact,0.10016742116155974,1.0,False
+G1-7B,hotpotqa_g1,naive,V4,20,0.0,-0.13859292911256332,0.13859292911256332,1.0,mcnemar_exact,0.0,1.0,False

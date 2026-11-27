@@ -21,10 +21,26 @@ _ARTICLES = re.compile(r"^(the|a|an)\s+")
 _NON_WORD = re.compile(r"[^\w\s]")
 
 
+_CAMEL = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
+
+
 def normalize_entity(name: str) -> str:
     s = unicodedata.normalize("NFKC", name).lower().strip()
     s = _NON_WORD.sub(" ", s)
     return _ARTICLES.sub("", " ".join(s.split()))
+
+
+def split_camel(name: str) -> str:
+    """'HansenClarke' -> 'Hansen Clarke', '2004FrenchOpen' -> '2004 French Open'. Some extractors
+    (Qwen2.5-7B in G1: 54 % of entities) drop the spaces from multi-word names."""
+    return _CAMEL.sub(" ", name)
+
+
+def entity_key(name: str) -> str:
+    """Spacing-insensitive identity: 'UnitedKingdom', 'United Kingdom' and 'the united kingdom'
+    share a key. Splitting camel case *before* normalising keeps article stripping working
+    ('TheClickFive' == 'The Click Five'); dropping spaces afterwards keeps 'iPhone' == 'iphone'."""
+    return normalize_entity(split_camel(name)).replace(" ", "")
 
 
 class _UnionFind:
@@ -73,7 +89,7 @@ def plan_merges(
 
     by_norm: dict[str, list[str]] = {}
     for n in names:
-        by_norm.setdefault(normalize_entity(n), []).append(n)
+        by_norm.setdefault(entity_key(n), []).append(n)
     for group in by_norm.values():
         for other in group[1:]:
             uf.union(group[0], other)

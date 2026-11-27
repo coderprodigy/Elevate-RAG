@@ -59,6 +59,48 @@ Severity: **B** = blocks research results · **M** = limits a requirement · **L
 * No `LICENSE` file: `pyproject.toml` declares MIT, but the copyright holder must be chosen by the
   project owner before publishing.
 
+## Found in gate G1 (session 4)
+
+* **Docker VM disk failing** (`Input/output error` creating a Qdrant collection; Neo4j handshake
+  hangs; `docker ps` hangs). Likely damaged when the host disk filled. Restart Docker Desktop
+  when no other project is using it, then re-run `make db-up` and the live DB tests.
+* **3B judge unreliable**: accepted clearly wrong answers (5 of 6 inspected for `mix`). No
+  judge-based number counts until the human agreement gate (κ ≥ 0.6) passes.
+* **3B extractor too weak for RQ2**: 60 % of entities have no relation; 1,263 malformed
+  relation lines discarded by LightRAG. Use a stronger extractor for E-block runs.
+* **Latency under caching**: queries with cached LLM calls are excluded from latency
+  (`latency_n`, `cache_hit_rate` in summaries). For latency comparisons run each variant against
+  an empty LLM cache (fresh `ELEVATE_CACHE_DIR`).
+* **macOS + FAISS + local torch models** cannot share a process (OpenMP); refused with advice.
+* **Ollama context**: must be started with `OLLAMA_CONTEXT_LENGTH=8192` (or more).
+* **Idle sleep** pauses long local runs on a laptop; wrap them in `caffeinate -i`.
+
+## Found in the 7B G1 run (session 5)
+
+* The 8B judge is much more consistent than the 3B one (judge-free check agrees on all but one
+  inspected item) but is **still unvalidated** against humans: the κ gate is open.
+* The 7B G1 graph was built before the spacing-insensitive entity key (D-35): it contains 84
+  split duplicate nodes (duplicate rate 4.8 %). Rebuild before reusing it for anything but G1.
+* Graph modes with a local 7B model are slow (local p50 116 s vs 14 s for V4 on a laptop).
+* On 20 questions no retrieval mode differs significantly from V4; RQ2 needs the full E2.
+
+## Cluster readiness (session 5)
+
+* **The SLURM / vLLM / Apptainer path has not run on a real cluster or GPU.** Checked: Bash
+  syntax, dry-run submission (job graph, arrays, dependencies), the vLLM start/wait/stop logic
+  with a stub server, config resolution and spec validation for both cluster configs, and that
+  every model id/revision exists and is ungated on Hugging Face. Tier S0 (`submit.sh smoke`) is
+  the first real test; expect site-specific edits in `infrastructure/cluster/env.sh` (partition
+  names, account, module loads, GPU type).
+* **Qwen3.6-35B-A3B needs ~72 GB of weights** (2×80 GB or 4×48 GB GPUs). Smaller clusters use
+  `cluster_gpu_7b.yaml` (Qwen2.5-7B, one 24 GB+ GPU).
+* **Model download ≈ 105 GB** for `cluster_gpu.yaml`; put `HF_HOME` on scratch/project storage.
+* **Apptainer `--fakeroot`** may be disabled on some clusters; use the uv venv instead (no root).
+* `results/g1` (3B) predates the `extends` fix (D-31) and the run-id change (D-30): re-running it
+  creates new run ids and index keys; model inputs are unchanged.
+* Old partial indexes from the failed Qdrant/FAISS G1 attempts remain under `indexes/hotpotqa_g1/`
+  (git-ignored, a few MB). They are not used; delete them if you want the space.
+
 ## Hygiene
 
 * Nothing has been committed or pushed (explicit user instruction, D-17).

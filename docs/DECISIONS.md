@@ -217,3 +217,70 @@ from code comments and the traceability matrix.
   laptop and EC2 silently invalidates resumable runs.
 * **Alternatives:** an HTTP API service (no requirement for one; adds an attack surface);
   keeping paths in the hash (breaks resume across machines).
+
+## D-30 Run identity excludes operational model settings (2026-11-27)
+
+* **Decision:** `config_hash()` (and so every run id) ignores, per model, `base_url`,
+  `api_key_env`, `max_concurrency`, `timeout_s`, `max_retries`, and LightRAG's `llm_max_async` /
+  `max_parallel_insert`, in addition to storage paths (D-29).
+* **Why:** on a cluster every job lands on a different node, so the vLLM URL differs per
+  submission; with the URL in the hash a resubmitted job would redo completed runs. None of these
+  fields changes a model's output (seeded requests).
+* **Alternatives:** keep them and pin a fixed hostname (impossible on SLURM); hash only an
+  allow-list of fields (brittle when new output-affecting fields are added).
+
+## D-31 `extends`: a child model role with its own `model:` replaces the parent role (2026-11-27)
+
+* **Decision:** deep merge as before, except for `models.<role>` mappings that name a `model`,
+  which replace the parent's role. Partial role overrides (no `model:`) still merge.
+* **Why:** found while writing the cluster config: `local_free.yaml` inherited the reference
+  extractor's Anthropic-only `effort: low`, which was sent to Ollama (ignored there, but it would
+  be an unknown request field for vLLM and it polluted the model identity).
+* **Consequence:** indexes and caches of `local_free.yaml` built before the fix have a different
+  key; `results/g1` (3B) predates it. Model inputs were unaffected (Ollama ignores the field).
+
+## D-32 Cluster execution: vLLM per job, sharded experiments, in-process storage (2026-11-27)
+
+* **Decision:** SLURM jobs start their own vLLM servers (generator and judge on disjoint GPUs,
+  ports derived from the job id), experiments are split with `--shard K/N` into job arrays, and
+  the cluster config uses FAISS + NetworkX in-process storage. Apptainer is optional (uv venv
+  works without root).
+* **Why:** university clusters rarely allow Docker or long-lived services; per-job servers need
+  no admin support. Queries never write to the index (verified: LightRAG files untouched during
+  a full experiment), so shards share one index; SQLite caches are per shard because SQLite
+  locking is unreliable across nodes.
+* **Alternatives:** one long job serving all shards (simpler but no parallelism and fragile to
+  time limits); Qdrant/Neo4j as Apptainer instances (possible for E4; not needed for E1–E3).
+* **Status:** dry-run and stub-tested only; tier S0 is the first real test.
+
+## D-33 All-open cluster models (2026-11-27)
+
+* **Decision:** `cluster_gpu.yaml` uses Qwen/Qwen3.6-35B-A3B (the reference generator) for every
+  generation role, thinking disabled per its model card, and microsoft/phi-4 (MIT, different
+  family) as judge; `cluster_gpu_7b.yaml` swaps in Qwen/Qwen2.5-7B-Instruct for smaller GPUs.
+  All revisions pinned and verified ungated on 2026-11-27; vLLM 0.33.0 (the newest release at
+  least two weeks old; the card requires ≥ 0.19).
+* **Why:** the owner's decision was $0 spend (D-27); the cluster is free compute. This makes the
+  cluster runs a factor variant (E5) of the reference, which is how results must be labelled.
+
+## D-34 Judge-sample items keyed by run id (2026-11-27)
+
+* **Decision:** judge-sample item ids are `j<i>|<run_id>|<question_id>|<mode>`; agreement checks
+  that the annotators labelled exactly the exported sample.
+* **Why:** a sample spanning a router run and a mode run can contain the same question answered
+  in the same mode by two runs; keyed without the run id, one verdict silently overwrote the
+  other and the κ would compare a human label with the wrong answer's verdict.
+
+## D-35 Spacing-insensitive entity identity (2026-11-27)
+
+* **Decision:** entity resolution groups names by `entity_key` (camel case split, normalised,
+  spaces removed) instead of the exact normalised name; graph-quality duplicate counting and the
+  G3 answer-entity coverage use the same idea.
+* **Why:** Qwen2.5-7B wrote 54 % of entity names without spaces in G1 ("HansenClarke"). Exact
+  matching left 84 split duplicates in the graph and made G3 coverage report 2/4 instead of 4/4.
+  Removing spaces after normalising keeps "iPhone" == "iphone"; splitting camel case before
+  normalising keeps article stripping ("TheClickFive" == "The Click Five").
+* **Risk:** rare false merges of names that differ only in spacing; embedding-stage merges keep
+  the entity-type guard. The A2 ablation measures resolution's effect either way.
+* **Consequence:** graphs built before this change (both G1 graphs) keep their duplicates until
+  rebuilt; coverage was re-validated (7B: 4/4; 3B: 4/4, unchanged).

@@ -1,0 +1,19 @@
+id: S0
+question: G1
+description: >
+  Scale tier 0: the G1 smoke test on a GPU cluster (cluster_gpu.yaml: Qwen3.6-35B-A3B via vLLM,
+  phi-4 judge, FAISS + NetworkX). Same 20 HotpotQA questions and variants as G1, so the cluster
+  stack can be compared with the laptop runs before any larger tier. Prepare the subset first:
+  `elevate-rag data prepare hotpotqa --n-questions 20 --as hotpotqa_g1` (seed 13 is the
+  HotpotQA default, so this reproduces the laptop subset exactly).
+pipeline: ../pipelines/cluster_gpu.yaml
+datasets: [hotpotqa_g1]
+split: all
+concurrency: 8
+variants:
+  - {name: V4, mode: v4}
+  - {name: naive, mode: naive}
+  - {name: local, mode: local}
+  - {name: hybrid, mode: hybrid}
+  - {name: mix, mode: mix}
+  - {name: R1-rules, router: {level: rules}}

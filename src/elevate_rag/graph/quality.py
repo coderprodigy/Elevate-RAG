@@ -14,7 +14,7 @@ from typing import Any
 
 import networkx as nx
 
-from elevate_rag.graph.resolution import normalize_entity
+from elevate_rag.graph.resolution import entity_key, normalize_entity, split_camel
 from elevate_rag.indexing.chunk_store import ChunkStore
 from elevate_rag.types import Question
 
@@ -24,12 +24,16 @@ _NON_ENTITY_ANSWERS = {"yes", "no", "insufficient information"}
 def answer_entity_coverage(questions: list[Question], node_names: list[str]) -> dict[str, Any]:
     """Share of answerable questions whose (any) reference answer appears as a graph node.
 
-    Matching (after :func:`normalize_entity`): exact name match, or the answer occurs as a whole
+    Matching (after :func:`normalize_entity`, node names also camel-split so space-stripped names
+    like 'JaromeIginla' count): exact name match, or the answer occurs as a whole
     token sequence inside a node name ("Obama" ⊂ "barack obama"), or a node name of ≥ 2 tokens
     occurs inside a short (≤ 6-token) answer. Yes/no answers are not entities and are excluded
     from the denominator (reported separately).
     """
-    norm_nodes = {normalize_entity(n) for n in node_names}
+    # both the raw and the camel-split form of every node name, so 'JaromeIginla' matches
+    norm_nodes = {normalize_entity(n) for n in node_names} | {
+        normalize_entity(split_camel(n)) for n in node_names
+    }
     padded = [f" {n} " for n in norm_nodes]
     multi = [n for n in norm_nodes if len(n.split()) >= 2]
     eligible = covered = excluded = 0
@@ -77,7 +81,7 @@ def graph_shape(
     g.add_nodes_from(n["id"] for n in nodes)
     g.add_edges_from((e["source"], e["target"]) for e in edges)
     n, m = g.number_of_nodes(), g.number_of_edges()
-    norm = Counter(normalize_entity(x["id"]) for x in nodes)
+    norm = Counter(entity_key(x["id"]) for x in nodes)
     dup_nodes = sum(c for c in norm.values() if c > 1)
     no_prov_nodes = [x["id"] for x in nodes if not x.get("chunk_ids")]
     no_prov_edges = [(e["source"], e["target"]) for e in edges if not e.get("chunk_ids")]

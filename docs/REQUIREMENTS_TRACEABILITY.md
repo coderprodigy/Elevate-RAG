@@ -5,7 +5,7 @@ Status legend (spec §24):
 credentials / hardware) · **PI** partially implemented · **BL** blocked (external) · **NI** not implemented.
 
 Code paths are relative to `src/elevate_rag/`. Tests: `tests/…`. Evidence for IV rows = the tests
-named (all passing: `126 passed, 4 skipped`) and/or the real-data artefact named.
+named (all passing: `134 passed, 4 skipped`) and/or the real-data artefact named.
 
 ## Research questions
 
@@ -85,7 +85,7 @@ named (all passing: `126 passed, 4 skipped`) and/or the real-data artefact named
 | FR-X1 runner E1–E6, A1–A4 | `experiments/runner.py`, `configs/experiments/` | e2e experiment + CLI tests; all specs expand & validate | IV |
 | FR-X2 one factor at a time; extractor datasets | variants; `validate` | `test_validate_enforces_protocol_rules` | IV |
 | FR-X3 external systems isolated | `experiments/external.py` | `test_external_predictions_contract` | PI (P4) |
-| FR-X4 dry-run, validation, estimate, subsets, resume, run IDs, immutable manifests, JSONL, tables | runner + harness | `test_run_questions_resumes_after_crash`, `test_experiment_run_…_resume`, CLI dry-run | IV |
+| FR-X4 dry-run, validation, estimate, subsets, resume, run IDs, immutable manifests, JSONL, tables | runner + harness; `--pipeline/--datasets/--limit/--shard` | `test_run_questions_resumes_after_crash`, `test_experiment_run_…_resume`, `test_select_shard_partitions_runs_exactly_once`, `test_load_spec_can_retarget_pipeline_limit_and_datasets`, CLI dry-run | IV |
 | FR-X5 5 % pilot + cap | `index pilot`, `UsageLedger.check_budget` | `test_budget_cap_…` (unit + e2e) | IV (cap) · IN (pilot with real LLM) |
 | FR-O1 structured logs (+Langfuse) | `utils.configure_logging` (JSON, redaction) | `test_json_log_formatter_redacts_secrets` | PI (Langfuse NI, P5) |
 | FR-O2 per-query record | `pipeline.QueryRecord` | e2e tests (fields asserted) | IV |
@@ -102,6 +102,7 @@ named (all passing: `126 passed, 4 skipped`) and/or the real-data artefact named
 | NFR-2 fairness | shared path in `ElevateRAG.answer`; validation rules | IV |
 | NFR-3 cost safety | cap checked before calls; `$0` default; `BudgetExceededError` aborts | IV |
 | NFR-4 reliability | retries/backoff/timeouts (`retry_async`), bounded semaphores, resumable indexing/runs, crash-safe JSONL | IV |
-| NFR-5 quality | ruff clean, mypy clean (53 files), 126 tests, 86 % coverage, CI workflow (+ Docker image job) | IV (CI not executed remotely — nothing pushed) |
-| NFR-6 security | `.env` ignored/untouched, secrets redacted in logs, no credentials in repo | IV |
+| NFR-5 quality | ruff clean, mypy clean (53 files), 134 tests, 86 % coverage, CI workflow (+ Docker image job) | IV locally (CI result on GitHub not observed from here) |
+| NFR-6 security | `.env` git-ignored (local DB passwords only), secrets redacted in logs, no credentials in repo, DB ports bound to localhost | IV |
 | NFR-7 simplicity | no empty modules; offline providers are real algorithms (D-18) | IV |
+| NFR-8 portability (laptop, GPU workstation, SLURM cluster, EC2) | `docs/RUNNING.md`; `scripts/run_pipeline.sh`; `infrastructure/cluster/` (SLURM, vLLM, Apptainer); location- and endpoint-independent run ids (D-29, D-30) | laptop: IV (G1 runs); cluster: PI (dry-run + stub-tested, not yet on a real cluster) |

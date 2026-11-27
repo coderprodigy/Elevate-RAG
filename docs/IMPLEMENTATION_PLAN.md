@@ -6,7 +6,7 @@ implementation can verify; "Research" criteria need credentials, services, budge
 | Phase | Scope | Software acceptance (status) | Research gate |
 |---|---|---|---|
 | 0 Planning & environment | requirements, decisions, uv env, lockfile, verified APIs/IDs | docs present; `uv sync --locked` works; LightRAG API verified (**done**) | – |
-| 1 Data & evaluation foundation | 6 loaders, schemas, splits, manifests, harness, metrics | real loaders validated on real files; end-to-end on synthetic set (**done**) | **G1**: harness end-to-end on 20 real questions with real models (needs credentials) |
+| 1 Data & evaluation foundation | 6 loaders, schemas, splits, manifests, harness, metrics | real loaders validated on real files; end-to-end on synthetic set (**done**) | **G1**: harness end-to-end on 20 real questions with real models: **passed for the pipeline** with $0 local models (`results/g1`, `results/g1_7b`); judge still needs the human κ gate |
 | 2 Vector RAG | V0–V4, chunking ablations, HNSW params | all modes tested; BM25 measured on real data (**done**) | **G2**: tune V4 on dev and freeze (needs models) |
 | 3 Graph RAG | LightRAG integration, provenance, resolution, modes, quality checks, audit export, community ablation | integration tests vs real LightRAG 1.5.7 (**done**) | **G3**: coverage ≥ 60 % per dataset with the reference extractor; two-annotator triple audit (needs credentials + people) |
 | 4 Routing | R0–R4, both label schemes, oracle | unit/e2e tests; R1/R2 measured on real labels (**done**) | router results on test after dev-only training |

@@ -1,0 +1,19 @@
+id: G1-7B
+question: G1
+description: >
+  Gate G1 re-run with mid-size local models (local_7b.yaml: Qwen2.5-7B generator/extractor,
+  Llama-3.1-8B judge), same 20 questions, embedder, reranker, storage and prompts as the 3B run
+  (G1_smoke_local.yaml), so the two runs differ only in the LLMs. Storage is in-process (exact
+  vector search + NetworkX), so no Docker is needed. Its scores are "mid-size local models"
+  numbers on 20 questions and answer no research question.
+pipeline: ../pipelines/local_7b.yaml
+datasets: [hotpotqa_g1]
+split: all
+concurrency: 2
+variants:
+  - {name: V4, mode: v4, overrides: &stores {vector_store.backend: exact, lightrag.vector_storage: NanoVectorDBStorage, graph_store.backend: networkx, lightrag.graph_storage: NetworkXStorage}}
+  - {name: naive, mode: naive, overrides: *stores}
+  - {name: local, mode: local, overrides: *stores}
+  - {name: hybrid, mode: hybrid, overrides: *stores}
+  - {name: mix, mode: mix, overrides: *stores}
+  - {name: R1-rules, router: {level: rules}, overrides: *stores}

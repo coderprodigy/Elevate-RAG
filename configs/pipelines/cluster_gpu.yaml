@@ -1,0 +1,53 @@
+# CLUSTER CONFIGURATION: every model open-weight and self-hosted, so it costs $0 in API fees.
+# For university GPU servers (SLURM). The plan's reference configuration with its one paid role
+# (the Claude Haiku extractor) replaced by the open generator, and an open judge from a different
+# family. A *factor variant* of the reference (E5), not the reference itself.
+#
+#   generator / extractor / keywords / router : Qwen/Qwen3.6-35B-A3B  (vLLM, ELEVATE_GEN_URL)
+#   judge                                     : microsoft/phi-4      (vLLM, ELEVATE_JUDGE_URL)
+#   embedder / reranker                       : Qwen3-Embedding-0.6B / bge-reranker-v2-m3 (GPU)
+#   storage                                   : FAISS (HNSW) + NetworkX, in-process (no Docker)
+#
+# All IDs and revisions verified on Hugging Face 2026-11-27 (ungated; Apache-2.0 / MIT).
+# Smaller GPUs: serve Qwen/Qwen2.5-7B-Instruct instead (see docs/RUNNING.md, "Model sizes").
+# Thinking is disabled for Qwen3.6 (`enable_thinking: false`, per its model card) so extraction
+# and answers are direct responses; the judge must still pass the human agreement gate.
+extends: reference.yaml
+name: cluster-gpu
+models:
+  extractor: &gen
+    provider: openai-compatible
+    model: Qwen/Qwen3.6-35B-A3B
+    revision: 345d467b117d1fd5eda9b879a5988de9ae5f47a7
+    base_url: ${ELEVATE_GEN_URL}
+    family: qwen
+    params: {seed: 0, chat_template_kwargs: {enable_thinking: false}}
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+    max_concurrency: 32
+    timeout_s: 900
+  keyword: *gen
+  generator: *gen
+  router_llm: *gen
+  judge:
+    provider: openai-compatible
+    model: microsoft/phi-4
+    revision: 2db69c1c3e91a05d2c64a3185acfbaf36f744e25
+    base_url: ${ELEVATE_JUDGE_URL}
+    family: phi
+    params: {seed: 0}
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+    max_concurrency: 32
+    timeout_s: 900
+vector_store:
+  backend: faiss          # Linux wheels: no OpenMP clash with torch (that is macOS-only)
+graph_store: {backend: networkx}
+lightrag:
+  vector_storage: NanoVectorDBStorage
+  graph_storage: NetworkXStorage
+  llm_max_async: 32
+  max_parallel_insert: 4
+  extract_max_tokens: 4096
+  entity_extract_max_gleaning: 1
+budget: {max_usd: 0}

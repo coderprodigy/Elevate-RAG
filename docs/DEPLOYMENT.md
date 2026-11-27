@@ -1,5 +1,8 @@
 # Deploying on AWS EC2
 
+For laptops, GPU workstations and university SLURM clusters see [RUNNING.md](RUNNING.md); this
+page covers AWS EC2 only.
+
 Elevate-RAG is a batch research tool (a CLI), not a web service: on EC2 you run long experiment
 jobs, not a public endpoint. Nothing needs inbound traffic except SSH.
 

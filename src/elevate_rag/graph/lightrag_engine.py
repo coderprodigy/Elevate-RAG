@@ -96,7 +96,9 @@ class LightRAGEngine:
         roles = {"query": RoleLLMConfig(func=_llm_func(self.query_llm, "lightrag:query", 2048))}
         if self.extractor is not None:
             roles["extract"] = RoleLLMConfig(
-                func=_llm_func(self.extractor, "lightrag:extract", 4096)
+                func=_llm_func(
+                    self.extractor, "lightrag:extract", self.cfg.lightrag.extract_max_tokens
+                )
             )
         if self.keyword_llm is not None:
             roles["keyword"] = RoleLLMConfig(
@@ -343,15 +345,10 @@ class LightRAGEngine:
         return nodes, edges
 
     async def merge_entities(self, sources: list[str], target: str) -> None:
-        await self.rag.amerge_entities(
-            sources,
-            target,
-            merge_strategy={
-                "description": "concatenate",
-                "entity_type": "keep_first",
-                "source_id": "join_unique",
-            },
-        )
+        # LightRAG 1.5.7's defaults are exactly the strategy we want (descriptions concatenated,
+        # first entity type kept, source/file ids joined uniquely); passing `merge_strategy`
+        # explicitly is deprecated there and only produced a warning per merge.
+        await self.rag.amerge_entities(sources, target)
 
     def save_chunk_map(self, path: Path) -> None:
         write_json(path, self._lr_to_ours)

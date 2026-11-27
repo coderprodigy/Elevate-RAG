@@ -68,6 +68,7 @@ TABLE_FIELDS = [
     "error_rate",
     "latency_p50_s",
     "latency_p95_s",
+    "cache_hit_rate",
     "prompt_tokens_mean",
     "context_tokens_mean",
     "cost_per_1k_queries_usd",
@@ -100,6 +101,7 @@ def results_table(runs: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
                     for k in (
                         "latency_p50_s",
                         "latency_p95_s",
+                        "cache_hit_rate",
                         "prompt_tokens_mean",
                         "context_tokens_mean",
                         "cost_per_1k_queries_usd",
@@ -344,7 +346,6 @@ def fig_interaction(
     path: Path,
     *,
     mode_key: str = "mode",
-    generator_key: str = "generator_model",
 ) -> Path | None:
     """E6: retrieval mode × generator size — one line per mode across generators."""
     pts: dict[str, dict[str, float]] = defaultdict(dict)

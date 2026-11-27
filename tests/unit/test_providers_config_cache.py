@@ -384,3 +384,61 @@ def test_storage_dirs_default_from_environment(monkeypatch: pytest.MonkeyPatch) 
         "/mnt/elevate/indexes",
         "data/cache",
     )
+
+
+@pytest.mark.parametrize(("loading", "loaded"), [("faiss", "torch"), ("torch", "faiss")])
+def test_openmp_guard_refuses_faiss_with_torch_on_macos(
+    monkeypatch: pytest.MonkeyPatch, loading: str, loaded: str
+) -> None:
+    import sys
+
+    from elevate_rag.utils import ConfigError, guard_openmp
+
+    monkeypatch.setitem(sys.modules, loaded, object())  # pretend the other library is loaded
+    monkeypatch.setattr(sys, "platform", "darwin")
+    with pytest.raises(ConfigError, match="OpenMP"):
+        guard_openmp(loading)
+    monkeypatch.setattr(sys, "platform", "linux")  # Linux wheels do not conflict
+    guard_openmp(loading)
+
+
+def test_extract_max_tokens_is_part_of_the_index_identity(tmp_path: Path) -> None:
+    from tests.conftest import offline_config
+
+    a = offline_config(tmp_path)
+    b = a.model_copy(
+        update={"lightrag": a.lightrag.model_copy(update={"extract_max_tokens": 1536})}
+    )
+    assert a.lightrag.extract_max_tokens == 4096
+    assert a.index_key() != b.index_key()  # a different extraction cap is a different graph
+
+
+def test_config_hash_ignores_endpoint_and_concurrency(tmp_path: Path) -> None:
+    from tests.conftest import offline_config
+
+    a = offline_config(tmp_path)
+    gen = a.models.generator.model_copy(
+        update={"base_url": "http://gpu-node-17:8000/v1", "max_concurrency": 64, "timeout_s": 999}
+    )
+    b = a.model_copy(update={"models": a.models.model_copy(update={"generator": gen})})
+    assert a.config_hash() == b.config_hash()  # resubmitted cluster jobs keep their run ids
+    seeded = a.models.generator.model_copy(update={"params": {"seed": 1}})
+    c = a.model_copy(update={"models": a.models.model_copy(update={"generator": seeded})})
+    assert a.config_hash() != c.config_hash()  # output-changing settings still count
+
+
+def test_child_model_role_replaces_parent_role(tmp_path: Path) -> None:
+    (tmp_path / "parent.yaml").write_text(
+        "name: p\nmodels:\n"
+        "  embedder: {provider: hash, model: h, dimension: 8}\n"
+        "  generator: {provider: anthropic, model: claude-haiku-5-5, params: {effort: low}}\n"
+    )
+    (tmp_path / "child.yaml").write_text(
+        "extends: parent.yaml\nname: c\nmodels:\n"
+        "  generator: {provider: openai-compatible, model: qwen, params: {seed: 0}}\n"
+        "  embedder: {dimension: 16}\n"
+    )
+    cfg = load_pipeline_config(tmp_path / "child.yaml")
+    assert cfg.models.generator.params == {"seed": 0}  # no Anthropic-only `effort` leaked
+    # a role override without `model:` still merges into the parent's role
+    assert cfg.models.embedder.model == "h" and cfg.models.embedder.dimension == 16

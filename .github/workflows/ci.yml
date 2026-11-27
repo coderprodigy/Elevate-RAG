@@ -23,6 +23,10 @@ jobs:
         run: uv run ruff format --check src tests scripts
       - name: Type check
         run: uv run mypy
+      - name: Shell scripts (errors only)
+        run: shellcheck -S error scripts/*.sh infrastructure/cluster/*.sh infrastructure/cluster/*.sbatch
+      - name: Cluster submission (dry run, no SLURM needed)
+        run: ELEVATE_ROOT="$RUNNER_TEMP/elevate" DRY_RUN=1 infrastructure/cluster/submit.sh smoke
       - name: Tests (offline; DB-service tests skip without services)
         run: uv run pytest -q --cov=elevate_rag --cov-report=term --cov-fail-under=80
 

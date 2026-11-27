@@ -1,0 +1,23 @@
+# Cluster configuration for smaller GPUs (one 24-48 GB card for the generator).
+# Same as cluster_gpu.yaml except the generator / extractor / keywords / router model:
+#   Qwen/Qwen2.5-7B-Instruct (15.2 GB bf16; no thinking mode, so no chat_template_kwargs).
+# Serve it with:  GEN_MODEL=Qwen/Qwen2.5-7B-Instruct \
+#                 GEN_REVISION=a09a35458c702b33eeacc393d103063234e8bc28 GEN_TP=1
+# Verified on Hugging Face 2026-11-27 (ungated, Apache-2.0).
+extends: cluster_gpu.yaml
+name: cluster-gpu-7b
+models:
+  extractor: &gen
+    provider: openai-compatible
+    model: Qwen/Qwen2.5-7B-Instruct
+    revision: a09a35458c702b33eeacc393d103063234e8bc28
+    base_url: ${ELEVATE_GEN_URL}
+    family: qwen
+    params: {seed: 0}
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+    max_concurrency: 32
+    timeout_s: 900
+  keyword: *gen
+  generator: *gen
+  router_llm: *gen

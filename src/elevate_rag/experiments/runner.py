@@ -94,9 +94,27 @@ class Run:
         return bool(modes & set(GRAPH_MODES))
 
 
-def load_spec(path: Path | str) -> tuple[ExperimentSpec, Path]:
+def load_spec(
+    path: Path | str,
+    *,
+    pipeline: Path | str | None = None,
+    limit: int | None = None,
+    datasets: list[str] | None = None,
+) -> tuple[ExperimentSpec, Path]:
+    """Load an experiment spec, optionally re-targeted without editing it: another pipeline
+    config (e.g. the cluster one), a per-run question limit, or a subset of its datasets.
+    Run ids are derived from the resulting config, so re-targeted runs never collide."""
     path = Path(path)
     data = yaml.safe_load(path.read_text())
+    if pipeline is not None:
+        data["pipeline"] = str(Path(pipeline).resolve())
+    if limit is not None:
+        data["limit"] = limit
+    if datasets:
+        unknown = sorted(set(datasets) - set(data.get("datasets", [])))
+        if unknown:
+            raise ConfigError(f"{path.name}: datasets {unknown} are not in this experiment")
+        data["datasets"] = [d for d in data["datasets"] if d in set(datasets)]
     return ExperimentSpec.model_validate(data), path.parent
 
 
@@ -123,6 +141,20 @@ def expand(spec: ExperimentSpec, base_dir: Path) -> list[Run]:
             run_id = f"{spec.id}-{v.name}-{ds}-{stable_hash(ident, 8)}"
             runs.append(Run(run_id, spec.id, ds, v, cfg, spec.split, spec.limit))
     return runs
+
+
+def select_shard(runs: list[Run], shard: str | None) -> list[Run]:
+    """``"K/N"`` → every N-th run starting at K (0-based). The order of `expand` is deterministic,
+    so N parallel jobs with K = 0..N-1 cover every run exactly once."""
+    if not shard:
+        return runs
+    try:
+        k, n = (int(x) for x in shard.split("/"))
+    except ValueError as exc:
+        raise ConfigError(f"--shard must look like K/N, got {shard!r}") from exc
+    if n < 1 or not 0 <= k < n:
+        raise ConfigError(f"--shard {shard!r}: need 0 <= K < N")
+    return runs[k::n]
 
 
 # ------------------------------------------------------------------------------- validation

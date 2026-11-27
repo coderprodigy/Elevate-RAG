@@ -37,6 +37,19 @@ def test_normalize_entity() -> None:
     assert normalize_entity("The  Royal-Survey Academy") == "royal survey academy"
 
 
+def test_entity_key_ignores_spacing_and_camel_case() -> None:
+    from elevate_rag.graph.resolution import entity_key
+
+    same = ["UnitedKingdom", "United Kingdom", "the united kingdom"]
+    assert len({entity_key(x) for x in same}) == 1
+    assert entity_key("TheClickFive") == entity_key("The Click Five")  # article still stripped
+    assert entity_key("iPhone") == entity_key("iphone")
+    assert entity_key("2004FrenchOpen") == entity_key("2004 French Open")
+    assert entity_key("Red Sea") != entity_key("Dead Sea")
+    plan = plan_merges([{"id": "JorgeAmado"}, {"id": "Jorge Amado"}], None, 1.0)
+    assert plan.n_merged == 1  # observed in the 7B G1 graph: 34 such split entities
+
+
 def test_plan_merges_by_name_and_embedding_with_type_guard() -> None:
     nodes = [
         {"id": "Barack Obama", "entity_type": "person", "source_id": "c1<SEP>c2"},
@@ -88,6 +101,8 @@ def test_answer_entity_coverage_rules() -> None:
     assert cov["eligible"] == 3 and cov["excluded_non_entity"] == 1
     assert cov["covered"] == 2 and cov["coverage"] == pytest.approx(2 / 3)
     assert cov["by_query_type"]["multi_hop"] == 1.0 and "Kessering" in cov["missed_examples"]
+    joined = answer_entity_coverage(qs[:2], ["BarackObama", "KesseringBridge"])
+    assert joined["covered"] == 2  # space-stripped node names still count
 
 
 def _store() -> ChunkStore:
@@ -351,6 +366,22 @@ def test_summarize_counts_failures_and_undefined() -> None:
     assert summarize([]) == {"n": 0}
 
 
+def test_latency_excludes_cache_served_queries() -> None:
+    fresh, cached = _row("a", True), _row("b", True)
+    fresh["timings"] = {"generation": 10.0}
+    fresh["calls"] = [
+        {"role": "generator:generate", "cached": False},
+        {"role": "embed:query", "cached": True},
+    ]
+    cached["timings"] = {"generation": 0.0}
+    cached["calls"] = [{"role": "generator:generate", "cached": True}]
+    eff = summarize([fresh, cached])["efficiency"]
+    assert eff["latency_p50_s"] == pytest.approx(10.0) and eff["latency_n"] == 1
+    assert eff["cache_hit_rate"] == pytest.approx(0.5)
+    only_cached = summarize([cached])["efficiency"]
+    assert only_cached["latency_p50_s"] is None  # unknown, never a fake ~0 s
+
+
 def test_failure_suggestions_and_export(tmp_path: Path) -> None:
     r = _row("q1", False)
     r["retrieved_chunk_ids"] = ["x::c0000"]
@@ -382,3 +413,72 @@ def test_milvus_unreachable_raises_storage_error(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setenv("ELEVATE_MILVUS_URI", "http://127.0.0.1:1")  # nothing listens here
     with pytest.raises(StorageError, match="Milvus unreachable"):
         make_vector_store(VectorStoreConfig(backend="milvus"), "t", 4)
+
+
+def test_select_shard_partitions_runs_exactly_once() -> None:
+    from elevate_rag.experiments.runner import select_shard
+    from elevate_rag.utils import ConfigError
+
+    runs = list(range(7))  # any sequence: order is what matters
+    parts = [select_shard(runs, f"{k}/3") for k in range(3)]  # type: ignore[arg-type]
+    assert sorted(x for p in parts for x in p) == runs and parts[0] == [0, 3, 6]
+    assert select_shard(runs, None) == runs  # type: ignore[arg-type]
+    for bad in ("3/3", "x", "1/0"):
+        with pytest.raises(ConfigError):
+            select_shard(runs, bad)  # type: ignore[arg-type]
+
+
+def test_load_spec_can_retarget_pipeline_limit_and_datasets(tmp_path: Path) -> None:
+    from elevate_rag.experiments.runner import expand, load_spec
+    from elevate_rag.utils import ConfigError
+
+    spec = Path("configs/experiments/E2_retrieval_modes.yaml")
+    s, base = load_spec(
+        spec, pipeline="configs/pipelines/demo_offline.yaml", limit=7, datasets=["hotpotqa"]
+    )
+    runs = expand(s, base)
+    assert s.limit == 7 and {r.dataset for r in runs} == {"hotpotqa"}
+    assert all(r.cfg.name == "demo-offline" for r in runs)
+    ref_runs = expand(*load_spec(spec, datasets=["hotpotqa"]))
+    assert {r.run_id for r in runs}.isdisjoint(r.run_id for r in ref_runs)  # no collisions
+    with pytest.raises(ConfigError):
+        load_spec(spec, datasets=["not-a-dataset"])
+
+
+def test_judge_agreement_keeps_runs_apart_and_checks_the_sample(tmp_path: Path) -> None:
+    from typing import Any
+
+    from elevate_rag.evaluation.annotation import export_judge_sample
+
+    def row(run: str, verdict: str) -> dict[str, Any]:
+        r = _row("q1", verdict == "correct")
+        r.update(run_id=run, mode="local", answer=f"answer from {run}")
+        r["scores"]["judge"] = verdict
+        return r
+
+    # a router routing q1 to `local` and the `local` variant: same question, same mode
+    scored = [row("R1-run", "correct"), row("local-run", "wrong")]
+    qs = {"q1": Question(question_id="q1", dataset="d", question="?", answers=["x"])}
+    sample = tmp_path / "sample.csv"
+    assert export_judge_sample(scored, qs, sample, n=2) == 2
+    with sample.open() as fh:
+        rows = list(csv.DictReader(fh))
+    for name in ("a", "b"):  # both annotators agree with the judge on every item
+        with (tmp_path / f"{name}.csv").open("w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=["item_id", "label"])
+            w.writeheader()
+            for r in rows:
+                w.writerow(
+                    {
+                        "item_id": r["item_id"],
+                        "label": "correct" if "R1-run" in r["item_id"] else "wrong",
+                    }
+                )
+    res = judge_agreement(sample, tmp_path / "a.csv", tmp_path / "b.csv", scored)
+    assert res["n"] == 2 and res["kappa_judge_vs_consensus"] == pytest.approx(1.0)
+    with (tmp_path / "c.csv").open("w", newline="") as fh:  # labels only one of the two items
+        w = csv.DictWriter(fh, fieldnames=["item_id", "label"])
+        w.writeheader()
+        w.writerow({"item_id": rows[0]["item_id"], "label": "correct"})
+    with pytest.raises(ValueError, match="sample"):
+        judge_agreement(sample, tmp_path / "c.csv", tmp_path / "c.csv", scored)

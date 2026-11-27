@@ -1,0 +1,44 @@
+{
+  "coverage": {
+    "coverage": 1.0,
+    "covered": 4,
+    "eligible": 4,
+    "excluded_non_entity": 0,
+    "by_query_type": {
+      "comparison": 1.0,
+      "multi_hop": 1.0
+    },
+    "missed_examples": []
+  },
+  "shape": {
+    "nodes": 1746,
+    "edges": 841,
+    "avg_degree": 0.9633447880870561,
+    "clustering_coefficient": 0.013751748853830924,
+    "connected_components": 960,
+    "isolated_nodes": 845,
+    "duplicate_rate": 0.048109965635738834,
+    "nodes_without_provenance": 0,
+    "edges_without_provenance": 0,
+    "entity_types": {
+      "person": 342,
+      "location": 253,
+      "organization": 237,
+      "concept": 186,
+      "content": 146,
+      "artifact": 123,
+      "unknown": 118,
+      "event": 112,
+      "other": 83,
+      "data": 74,
+      "date": 16,
+      "method": 16,
+      "naturalobject": 8,
+      "creature": 5,
+      "timeperiod": 4
+    },
+    "chunks_with_entities": 1.0
+  },
+  "gate_G3_coverage_ok": true,
+  "fallback_rule": "if coverage < 0.6 after tuning, rebuild with the LlamaIndex SchemaLLMPathExtractor fallback (FR-G11)"
+}

@@ -509,11 +509,28 @@ def router_cv(
 # =============================================================================== experiments
 
 
-@exp_app.command("validate")
-def exp_validate(spec: Path) -> None:
-    from elevate_rag.experiments.runner import expand, load_spec, validate
+_PIPELINE_OPT = typer.Option(None, help="run the spec against this pipeline config instead")
+_LIMIT_OPT = typer.Option(None, help="at most this many questions per run")
+_DATASETS_OPT = typer.Option(None, help="comma-separated subset of the spec's datasets")
 
-    s, base = load_spec(spec)
+
+def _spec(spec: Path, pipeline: Path | None, limit: int | None, datasets: str | None) -> Any:
+    from elevate_rag.experiments.runner import load_spec
+
+    ds = [d.strip() for d in datasets.split(",") if d.strip()] if datasets else None
+    return load_spec(spec, pipeline=pipeline, limit=limit, datasets=ds)
+
+
+@exp_app.command("validate")
+def exp_validate(
+    spec: Path,
+    pipeline: Path | None = _PIPELINE_OPT,
+    limit: int | None = _LIMIT_OPT,
+    datasets: str | None = _DATASETS_OPT,
+) -> None:
+    from elevate_rag.experiments.runner import expand, validate
+
+    s, base = _spec(spec, pipeline, limit, datasets)
     runs = expand(s, base)
     problems = validate(s, runs)
     _echo({"runs": len(runs), "problems": problems})
@@ -522,10 +539,15 @@ def exp_validate(spec: Path) -> None:
 
 
 @exp_app.command("estimate")
-def exp_estimate(spec: Path) -> None:
-    from elevate_rag.experiments.runner import estimate, expand, load_spec
+def exp_estimate(
+    spec: Path,
+    pipeline: Path | None = _PIPELINE_OPT,
+    limit: int | None = _LIMIT_OPT,
+    datasets: str | None = _DATASETS_OPT,
+) -> None:
+    from elevate_rag.experiments.runner import estimate, expand
 
-    s, base = load_spec(spec)
+    s, base = _spec(spec, pipeline, limit, datasets)
     _echo(estimate(expand(s, base)))
 
 
@@ -534,14 +556,27 @@ def exp_run(
     spec: Path,
     runs_root: Path = typer.Option(Path("runs"), envvar="ELEVATE_RUNS_DIR"),
     dry_run: bool = typer.Option(False),
-    only: str | None = typer.Option(None),
+    only: str | None = typer.Option(None, help="keep runs whose id contains this text"),
+    shard: str | None = typer.Option(
+        None, help="K/N: run only every N-th run starting at K (0-based), for job arrays"
+    ),
     yes: bool = typer.Option(False, help="skip the cost confirmation prompt"),
+    pipeline: Path | None = _PIPELINE_OPT,
+    limit: int | None = _LIMIT_OPT,
+    datasets: str | None = _DATASETS_OPT,
 ) -> None:
     """Run (or dry-run) an experiment; completed runs are skipped, failed runs resumed."""
-    from elevate_rag.experiments.runner import estimate, execute_run, expand, load_spec, validate
+    from elevate_rag.experiments.runner import (
+        estimate,
+        execute_run,
+        expand,
+        select_shard,
+        validate,
+    )
 
-    s, base = load_spec(spec)
+    s, base = _spec(spec, pipeline, limit, datasets)
     runs = [r for r in expand(s, base) if not only or only in r.run_id]
+    runs = select_shard(runs, shard)
     problems = validate(s, runs)
     est = estimate(runs)
     if dry_run or problems:

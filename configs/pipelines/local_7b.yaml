@@ -1,0 +1,39 @@
+# $0 local configuration with mid-size models (still not the reference configuration).
+# Same embedder, reranker, storage and prompts as local_free.yaml; only the LLMs change:
+#   * generator / extractor / keywords / router: Qwen2.5-7B-Instruct (Ollama)
+#   * judge: Llama-3.1-8B (different family from every generator)
+# Report every number from this config as "mid-size local models"; the judge still has to pass
+# the human agreement gate (kappa >= 0.6) before its scores count.
+#
+# REQUIRED: OLLAMA_CONTEXT_LENGTH=8192 (see local_free.yaml). ~10 GB of model weights.
+extends: local_free.yaml
+name: local-7b
+models:
+  extractor: &qwen7
+    provider: openai-compatible
+    model: qwen2.5:7b-instruct
+    base_url: http://localhost:11434/v1
+    family: qwen
+    params: {seed: 0}
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+    max_concurrency: 2
+    timeout_s: 900
+  keyword: *qwen7
+  generator: *qwen7
+  router_llm: *qwen7
+  judge:
+    provider: openai-compatible
+    model: llama3.1:8b
+    base_url: http://localhost:11434/v1
+    family: llama
+    params: {seed: 0}
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+    max_concurrency: 2
+    timeout_s: 900
+lightrag:
+  # 7B models follow the output format far better than 3B, but keep a cap so a rare loop cannot
+  # overflow the 8192-token window; gleaning stays off to keep the laptop run under ~4 hours.
+  extract_max_tokens: 2048
+  entity_extract_max_gleaning: 0

@@ -7,6 +7,14 @@
 #   * the judge is a 3B model from a different family (Meta Llama vs Qwen) — independence holds,
 #     but its reliability MUST be checked against human labels (kappa ≥ 0.6) before results count.
 # Report every number from this config as "small local models".
+#
+# REQUIRED: start Ollama with a context window of at least 8192 tokens, e.g.
+#   OLLAMA_CONTEXT_LENGTH=8192 ollama serve
+# Ollama's default (4096) silently truncates the start of long prompts. LightRAG's extraction
+# prompt is ~1.9k tokens before the chunk and its gleaning pass resends prompt + answer, so at
+# 4096 the instructions get cut off. The OpenAI-compatible endpoint cannot set this per request.
+# On macOS keep vector_store.backend off FAISS with these torch models (OpenMP clash; the code
+# refuses it): use qdrant or exact.
 extends: reference.yaml
 name: local-free
 models:
@@ -50,4 +58,9 @@ models:
 lightrag:
   llm_max_async: 2
   max_parallel_insert: 1
+  # Qwen2.5-3B can fall into repetition loops in extraction (observed in G1: 66 lines, 17
+  # unique). Cap the output so a loop ends early and prompt + output fits the 8192 window, and
+  # skip the gleaning pass, which re-sends the (possibly looping) first answer.
+  extract_max_tokens: 1536
+  entity_extract_max_gleaning: 0
 budget: {max_usd: 0}

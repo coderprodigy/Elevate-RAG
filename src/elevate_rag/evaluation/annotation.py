@@ -51,7 +51,7 @@ def export_judge_sample(
             q = questions[r["question_id"]]
             w.writerow(
                 {
-                    "item_id": f"j{i:03d}|{r['question_id']}|{r.get('mode', '')}",
+                    "item_id": f"j{i:03d}|{_item_key(r)}",
                     "question": q.question,
                     "reference": " | ".join(q.answers),
                     "answer": r["answer"],
@@ -59,6 +59,12 @@ def export_judge_sample(
                 }
             )
     return len(sample)
+
+
+def _item_key(r: dict[str, Any]) -> str:
+    """Run + question + mode: a sample may span runs that answer the same question in the same
+    mode (e.g. a router routing to `local` and the `local` variant), so the run id is needed."""
+    return f"{r.get('run_id', '')}|{r['question_id']}|{r.get('mode', '')}"
 
 
 def judge_agreement(
@@ -69,7 +75,14 @@ def judge_agreement(
     ids = sorted(set(a) & set(b))
     if len(ids) < len(a) or len(ids) < len(b):
         raise ValueError("annotator files cover different items")
-    verdict = {f"{r['question_id']}|{r.get('mode', '')}": r["scores"]["judge"] for r in scored}
+    with sample_csv.open(encoding="utf-8") as fh:
+        sample_ids = {row["item_id"] for row in csv.DictReader(fh)}
+    if set(ids) != sample_ids:
+        raise ValueError(
+            f"annotations cover {len(ids)} items but the sample has {len(sample_ids)}; "
+            "label every row of the exported sample (and only those)"
+        )
+    verdict = {_item_key(r): r["scores"]["judge"] for r in scored}
     judge = [verdict.get(i.split("|", 1)[1]) for i in ids]
     if any(j is None for j in judge):
         raise ValueError("some annotated items are not in the scored results")
