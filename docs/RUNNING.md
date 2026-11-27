@@ -98,7 +98,7 @@ CUDA_VISIBLE_DEVICES=0,1 .venv-vllm/bin/vllm serve Qwen/Qwen3.6-35B-A3B \
   --revision 345d467b117d1fd5eda9b879a5988de9ae5f47a7 --port 8000 --tensor-parallel-size 2 \
   --max-model-len 32768 --seed 0 --reasoning-parser qwen3 --language-model-only &
 CUDA_VISIBLE_DEVICES=2 .venv-vllm/bin/vllm serve microsoft/phi-4 \
-  --revision 2db69c1c3e91a05d2c64a3185acfbaf36f744e25 --port 8001 --max-model-len 32768 --seed 0 &
+  --revision 2db69c1c3e91a05d2c64a3185acfbaf36f744e25 --port 8001 --max-model-len 16384 --seed 0 &
 export ELEVATE_GEN_URL=http://127.0.0.1:8000/v1 ELEVATE_JUDGE_URL=http://127.0.0.1:8001/v1
 
 scripts/run_pipeline.sh configs/pipelines/cluster_gpu.yaml \
@@ -118,8 +118,9 @@ Then any experiment: `uv run elevate-rag experiment run configs/experiments/E2_r
 | judge | microsoft/phi-4 | 29.3 GB | 1×40 GB+ |
 | embedder / reranker | Qwen3-Embedding-0.6B / bge-reranker-v2-m3 | 1.2 / 2.3 GB | any GPU, or CPU |
 
-KV cache needs room on top of the weights; `--max-model-len 32768` is plenty (prompts stay
-below 16k tokens).
+KV cache needs room on top of the weights; `--max-model-len 32768` for the generator is plenty
+(prompts stay below 16k tokens). phi-4's context limit is 16,384 tokens, so serve it with
+`--max-model-len 16384` (judge prompts are short).
 
 ## 4. College / HPC cluster (SLURM)
 

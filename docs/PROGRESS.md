@@ -118,3 +118,17 @@ Workspace `Elevate-RAG-nova`, branch `nova`. **Nothing committed or pushed** (us
   real test.
 * **Human annotation packets ready:** `results/g1*/judge_sample.csv`,
   `results/g1*/triple_audit_sample.csv`.
+
+## Session 6 (2026-11-27): README report, EC2 GPU guide, two script fixes
+
+* README rewritten as the project report: problem statement, step-by-step work, results, what
+  remains, and exact local / EC2 (GPU) / cluster run steps.
+* `scripts/run_pipeline.sh` ran the experiment with the spec's own pipeline instead of the one
+  the index was built with (e.g. S0 names `cluster_gpu.yaml`; running it with
+  `cluster_gpu_7b.yaml` would have mismatched) → `--pipeline` passed through. Run ids of the
+  committed G1 runs are unchanged (checked by dry run).
+* phi-4's context limit is 16,384 tokens (its `config.json`), but the judge was started with
+  `--max-model-len 32768`, which vLLM rejects → `JUDGE_MAX_MODEL_LEN=16384` in
+  `infrastructure/cluster/env.sh`, used by `serve_models.sh` (stub-tested) and RUNNING.md.
+* Every experiment spec validates against `cluster_gpu_7b.yaml`; E5/E6 Claude variants are
+  refused at budget $0, as intended.

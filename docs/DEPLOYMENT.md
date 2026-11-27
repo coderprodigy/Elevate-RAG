@@ -1,7 +1,9 @@
 # Deploying on AWS EC2
 
-For laptops, GPU workstations and university SLURM clusters see [RUNNING.md](RUNNING.md); this
-page covers AWS EC2 only.
+For laptops, GPU workstations and university SLURM clusters see [RUNNING.md](RUNNING.md). **For
+the scaled research runs on a GPU instance (vLLM, no API fees), follow the step-by-step guide in
+[README §6](../README.md#6-run-the-scaled-version-on-aws-ec2-gpu).** This page covers EC2
+security, the Docker image and CPU-only / API-model deployments.
 
 Elevate-RAG is a batch research tool (a CLI), not a web service: on EC2 you run long experiment
 jobs, not a public endpoint. Nothing needs inbound traffic except SSH.

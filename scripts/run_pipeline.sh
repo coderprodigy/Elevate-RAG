@@ -70,8 +70,10 @@ run_step validate "${ERAG[@]}" index validate "$PIPELINE" "${SETS[@]}" \
 sed -n '/^{/,$p' "$LOGS/${EXP_ID}_validate.log" > "$OUT/graph_validation.json"
 
 echo "[$(stamp)] 3/4 experiment ${EXP_ID} (log: $LOGS/${EXP_ID}_experiment.log)"
-run_step experiment_validate "${ERAG[@]}" experiment validate "$EXPERIMENT"
-run_step experiment "${ERAG[@]}" experiment run "$EXPERIMENT" --yes
+# --pipeline: run the spec against the pipeline the index was built with (a spec names its own
+# default pipeline, e.g. S0 -> cluster_gpu.yaml, which may differ from PIPELINE).
+run_step experiment_validate "${ERAG[@]}" experiment validate "$EXPERIMENT" --pipeline "$PIPELINE"
+run_step experiment "${ERAG[@]}" experiment run "$EXPERIMENT" --pipeline "$PIPELINE" --yes
 grep -E "✓|✗" "$LOGS/${EXP_ID}_experiment.log" || true
 
 echo "[$(stamp)] 4/4 report"

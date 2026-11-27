@@ -26,19 +26,19 @@ if [[ -z "${GEN_EXTRA_ARGS}" && "$GEN_MODEL" == Qwen/Qwen3* ]]; then
 fi
 
 _logdir="$ELEVATE_RUNS_DIR/logs"; mkdir -p "$_logdir"
-_start() {  # name gpus model revision tp port extra...
-  local name="$1" gpus="$2" model="$3" rev="$4" tp="$5" port="$6"; shift 6
+_start() {  # name gpus model revision tp port max_len extra...
+  local name="$1" gpus="$2" model="$3" rev="$4" tp="$5" port="$6" max_len="$7"; shift 7
   # shellcheck disable=SC2086  # VLLM_CMD and extra args are intentionally word-split
   CUDA_VISIBLE_DEVICES="$gpus" HF_HUB_OFFLINE=1 $VLLM_CMD serve "$model" \
     --revision "$rev" --served-model-name "$model" --host 127.0.0.1 --port "$port" \
-    --tensor-parallel-size "$tp" --max-model-len "$MAX_MODEL_LEN" --seed 0 \
+    --tensor-parallel-size "$tp" --max-model-len "$max_len" --seed 0 \
     --gpu-memory-utilization "${GPU_MEM_UTIL:-0.90}" "$@" \
     > "$_logdir/vllm-$name-${SLURM_JOB_ID:-local}.log" 2>&1 &
   echo $!
 }
 # shellcheck disable=SC2086
-GEN_PID="$(_start gen "$_gen_gpus" "$GEN_MODEL" "$GEN_REVISION" "$GEN_TP" "$GEN_PORT" $GEN_EXTRA_ARGS)"
-JUDGE_PID="$(_start judge "$_judge_gpus" "$JUDGE_MODEL" "$JUDGE_REVISION" "$JUDGE_TP" "$JUDGE_PORT")"
+GEN_PID="$(_start gen "$_gen_gpus" "$GEN_MODEL" "$GEN_REVISION" "$GEN_TP" "$GEN_PORT" "$MAX_MODEL_LEN" $GEN_EXTRA_ARGS)"
+JUDGE_PID="$(_start judge "$_judge_gpus" "$JUDGE_MODEL" "$JUDGE_REVISION" "$JUDGE_TP" "$JUDGE_PORT" "$JUDGE_MAX_MODEL_LEN")"
 trap 'kill "$GEN_PID" "$JUDGE_PID" 2>/dev/null || true' EXIT
 
 export ELEVATE_GEN_URL="http://127.0.0.1:${GEN_PORT}/v1"

@@ -38,7 +38,8 @@ export GEN_TP="${GEN_TP:-2}"            # tensor-parallel GPUs for the generator
 export JUDGE_MODEL="${JUDGE_MODEL:-microsoft/phi-4}"
 export JUDGE_REVISION="${JUDGE_REVISION:-2db69c1c3e91a05d2c64a3185acfbaf36f744e25}"
 export JUDGE_TP="${JUDGE_TP:-1}"
-export MAX_MODEL_LEN="${MAX_MODEL_LEN:-32768}"   # Elevate-RAG prompts stay well below 16k tokens
+export MAX_MODEL_LEN="${MAX_MODEL_LEN:-32768}"   # generator; Elevate-RAG prompts stay below 16k tokens
+export JUDGE_MAX_MODEL_LEN="${JUDGE_MAX_MODEL_LEN:-16384}"   # phi-4's context limit is 16k
 export GEN_PORT="${GEN_PORT:-8000}" JUDGE_PORT="${JUDGE_PORT:-8001}"
 
 # --- SLURM resources (passed to sbatch by submit.sh; adjust to your partitions) ----------------
