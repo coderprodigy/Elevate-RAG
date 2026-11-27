@@ -1,0 +1,88 @@
+name: ${ELEVATE_COMPOSE_PROJECT:-elevate-atlas}
+x-resource-limits: &resource-limits
+  cpus: ${ELEVATE_DB_CPUS:-2}
+  mem_limit: ${ELEVATE_DB_MEMORY:-4g}
+services:
+  qdrant:
+    <<: *resource-limits
+    image: qdrant/qdrant:v1.16.3
+    profiles: [reference]
+    ports: ["127.0.0.1:${ELEVATE_QDRANT_PORT:-16333}:6333"]
+    volumes: [qdrant:/qdrant/storage]
+    healthcheck:
+      test: [CMD-SHELL, 'bash -c "exec 3<>/dev/tcp/127.0.0.1/6333; printf \"GET /readyz HTTP/1.0\\r\\n\\r\\n\" >&3; head -1 <&3 | grep 200"']
+      interval: 15s
+      timeout: 5s
+      retries: 12
+  neo4j:
+    <<: *resource-limits
+    image: neo4j:5.26.0
+    profiles: [reference]
+    ports: ["127.0.0.1:${ELEVATE_NEO4J_PORT:-17687}:7687"]
+    environment:
+      NEO4J_AUTH: ${ELEVATE_NEO4J_AUTH:-}
+      NEO4J_PLUGINS: ${ELEVATE_NEO4J_PLUGINS:-[]}
+    volumes: [neo4j:/data]
+    healthcheck:
+      test: [CMD-SHELL, 'test -n "$$NEO4J_AUTH" && cypher-shell -u "$${NEO4J_AUTH%%/*}" -p "$${NEO4J_AUTH#*/}" "RETURN 1"']
+      interval: 15s
+      timeout: 6s
+      retries: 12
+  postgres:
+    <<: *resource-limits
+    image: elevate-atlas-postgres:16-vector0.8.1-age1.6.0
+    build:
+      context: .
+      dockerfile: postgres.Dockerfile
+    profiles: [postgres]
+    ports: ["127.0.0.1:${ELEVATE_PG_PORT:-15432}:5432"]
+    environment:
+      POSTGRES_USER: ${ELEVATE_PG_USER:-}
+      POSTGRES_PASSWORD: ${ELEVATE_PG_PASSWORD:-}
+      POSTGRES_DB: ${ELEVATE_PG_DATABASE:-elevate_atlas}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/10-elevate.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  memgraph:
+    <<: *resource-limits
+    image: memgraph/memgraph:3.7.0
+    profiles: [memgraph]
+    ports: ["127.0.0.1:${ELEVATE_MEMGRAPH_PORT:-17688}:7687"]
+    volumes: [memgraph:/var/lib/memgraph]
+    healthcheck:
+      test: [CMD-SHELL, 'echo "RETURN 1;" | mgconsole --host 127.0.0.1 --port 7687']
+      interval: 15s
+      timeout: 5s
+      retries: 12
+  milvus:
+    <<: *resource-limits
+    image: milvusdb/milvus:v2.6.11
+    profiles: [milvus]
+    command: [milvus, run, standalone]
+    security_opt: [seccomp:unconfined]
+    environment:
+      DEPLOY_MODE: STANDALONE
+      ETCD_USE_EMBED: "true"
+      ETCD_DATA_DIR: /var/lib/milvus/etcd
+      ETCD_CONFIG_PATH: /milvus/configs/elevate-etcd.yaml
+      COMMON_STORAGETYPE: local
+    ports: ["127.0.0.1:${ELEVATE_MILVUS_PORT:-19531}:19530"]
+    volumes:
+      - milvus:/var/lib/milvus
+      - ./milvus-etcd.yaml:/milvus/configs/elevate-etcd.yaml:ro
+    healthcheck:
+      test: [CMD, curl, -f, http://localhost:9091/healthz]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+volumes:
+  qdrant:
+  neo4j:
+  postgres:
+  memgraph:
+  milvus:

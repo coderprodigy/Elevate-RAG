@@ -1,0 +1,99 @@
+# Candidate protocol. A frozen model server and approved budget are required for real runs.
+synthetic = false
+seed = 42
+chunk_size = 512
+overlap = 64
+candidates = 50
+rerank_k = 8
+rrf_k = 60
+context_budget = 4096
+chunk_tokenizer_model = "BAAI/bge-m3"
+chunk_tokenizer_revision = "5617a9f61b028005a4858fdac845db406aefb181"
+context_tokenizer_model = "Qwen/Qwen3.6-35B-A3B"
+context_tokenizer_revision = "345d467b117d1fd5eda9b879a5988de9ae5f47a7"
+local_models_only = true
+spending_cap = 0.0
+namespace = "elevate_atlas"
+vector_store = "qdrant"
+graph_vector_store = "qdrant"
+graph_store = "neo4j"
+hnsw_m = 16
+ef_construction = 200
+ef_search = 100
+graph_depth = 1
+graph_merge_threshold = 0.95
+
+[models.embedding]
+provider = "sentence-transformers"
+model = "BAAI/bge-m3"
+revision = "5617a9f61b028005a4858fdac845db406aefb181"
+dimensions = 1024
+context_window = 8192
+
+[models.reranking]
+provider = "sentence-transformers"
+model = "BAAI/bge-reranker-v2-m3"
+revision = "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
+context_window = 8192
+
+[models.generation]
+provider = "openai-compatible"
+model = "Qwen/Qwen3.6-35B-A3B"
+revision = "345d467b117d1fd5eda9b879a5988de9ae5f47a7"
+base_url = "http://127.0.0.1:8080/v1"
+family = "qwen"
+context_window = 32768
+max_output = 1024
+
+[models.extraction]
+provider = "openai-compatible"
+model = "claude-haiku-5-5"
+revision = "claude-haiku-5-5"
+base_url = "https://api.anthropic.com/v1"
+key_env = "ELEVATE_EXTRACTION_KEY"
+family = "claude"
+context_window = 200000
+max_output = 4096
+# Reserve at the published upper prompt-length tier.
+input_per_million = 0.5
+output_per_million = 2.5
+paid = true
+
+[models.keywords]
+provider = "openai-compatible"
+model = "claude-haiku-5-5"
+revision = "claude-haiku-5-5"
+base_url = "https://api.anthropic.com/v1"
+key_env = "ELEVATE_KEYWORDS_KEY"
+family = "claude"
+context_window = 200000
+max_output = 512
+input_per_million = 0.5
+output_per_million = 2.5
+paid = true
+
+[models.router]
+provider = "openai-compatible"
+model = "claude-haiku-5-5"
+revision = "claude-haiku-5-5"
+base_url = "https://api.anthropic.com/v1"
+key_env = "ELEVATE_ROUTER_KEY"
+family = "claude"
+context_window = 200000
+max_output = 128
+input_per_million = 0.5
+output_per_million = 2.5
+paid = true
+
+[models.judge]
+provider = "openai-compatible"
+model = "deepseek-v4-pro"
+revision = "DeepSeek-V4-Pro-0813"
+base_url = "https://api.deepseek.com"
+key_env = "ELEVATE_JUDGE_KEY"
+family = "deepseek"
+context_window = 1000000
+max_output = 4096
+input_per_million = 1.32
+output_per_million = 3.96
+paid = true

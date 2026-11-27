@@ -1,0 +1,109 @@
+[datasets]
+multihop-rag = "../data/multihop-rag"
+hotpotqa = "../data/hotpotqa"
+musique = "../data/musique"
+graphrag-novel = "../data/graphrag-novel"
+graphrag-medical = "../data/graphrag-medical"
+natural-questions = "../data/natural-questions"
+ragrouter-bench = "../data/ragrouter-bench"
+
+# Candidate tier definitions. Provision and verify the exact services before execution.
+[models.embedding.small-open]
+provider = "sentence-transformers"
+model = "BAAI/bge-small-en-v1.5"
+revision = "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a"
+dimensions = 384
+context_window = 512
+query_prompt = "Represent this sentence for searching relevant passages: "
+
+[models.embedding.strong-open]
+provider = "sentence-transformers"
+model = "BAAI/bge-m3"
+revision = "5617a9f61b028005a4858fdac845db406aefb181"
+dimensions = 1024
+context_window = 8192
+
+[models.embedding.large-open]
+provider = "sentence-transformers"
+model = "Qwen/Qwen3-Embedding-8B"
+revision = "1d8ad4ca9b3dd8059ad90a75d4983776a23d44af"
+dimensions = 4096
+context_window = 32768
+query_prompt = "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"
+
+[models.embedding.api]
+provider = "openai-compatible"
+model = "text-embedding-3-large"
+revision = "text-embedding-3-large"
+base_url = "https://api.openai.com/v1"
+key_env = "ELEVATE_EMBEDDING_KEY"
+dimensions = 3072
+context_window = 8192
+input_per_million = 0.13
+paid = true
+
+[models.reranking.none]
+provider = "disabled"
+model = "none"
+revision = "1"
+
+[models.reranking.open]
+provider = "sentence-transformers"
+model = "BAAI/bge-reranker-v2-m3"
+revision = "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
+context_window = 8192
+
+[models.extraction.small-local]
+provider = "openai-compatible"
+model = "Qwen/Qwen3.6-35B-A3B"
+revision = "345d467b117d1fd5eda9b879a5988de9ae5f47a7"
+base_url = "http://127.0.0.1:8080/v1"
+family = "qwen"
+context_window = 32768
+max_output = 4096
+
+[models.extraction.cheap-api]
+provider = "openai-compatible"
+model = "claude-haiku-5-5"
+revision = "claude-haiku-5-5"
+base_url = "https://api.anthropic.com/v1"
+key_env = "ELEVATE_EXTRACTION_KEY"
+family = "claude"
+context_window = 200000
+max_output = 4096
+input_per_million = 0.5
+output_per_million = 2.5
+paid = true
+
+[models.extraction.strong-api]
+provider = "openai-compatible"
+model = "claude-sonnet-5-5"
+revision = "claude-sonnet-5-5"
+base_url = "https://api.anthropic.com/v1"
+key_env = "ELEVATE_EXTRACTION_KEY"
+family = "claude"
+context_window = 200000
+max_output = 4096
+input_per_million = 2.0
+output_per_million = 10.0
+paid = true
+
+[models.generation.small-open]
+provider = "openai-compatible"
+model = "google/gemma-4-12B-it"
+revision = "43c9d014b231474fa7212dbb48a762566c2b255d"
+base_url = "http://127.0.0.1:8082/v1"
+family = "gemma"
+context_window = 32768
+max_output = 1024
+context_tokenizer_model = "google/gemma-4-12B-it"
+context_tokenizer_revision = "43c9d014b231474fa7212dbb48a762566c2b255d"
+
+[models.generation.mid-open]
+provider = "openai-compatible"
+model = "Qwen/Qwen3.6-35B-A3B"
+revision = "345d467b117d1fd5eda9b879a5988de9ae5f47a7"
+base_url = "http://127.0.0.1:8080/v1"
+family = "qwen"
+context_window = 32768
+max_output = 1024

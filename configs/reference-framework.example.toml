@@ -1,0 +1,15 @@
+# Set the exact version installed in the dedicated framework virtual environment.
+framework_version = "0.14.26"
+chat_url = "http://127.0.0.1:8080/v1"
+chat_model = "replace-with-local-frozen-chat-model"
+embedding_url = "http://127.0.0.1:8081/v1"
+embedding_model = "replace-with-local-frozen-embedding-model"
+embedding_dimensions = 1024
+top_k = 8
+context_window = 8192
+max_output = 512
+request_timeout = 60.0
+
+# Set only for the Neo4j GraphRAG runner. Use an empty dedicated database.
+# neo4j_uri = "bolt://127.0.0.1:17687"
+# neo4j_database = "neo4j"

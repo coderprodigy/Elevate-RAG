@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling==1.33.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "elevate-rag"
+version = "0.1.0"
+description = "Controlled hybrid vector and graph retrieval experiments"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "httpx==0.28.1",
+    "numpy==2.4.6",
+]
+
+[project.optional-dependencies]
+graph = ["lightrag-hku==1.5.8", "networkx==3.6.1"]
+models = ["sentence-transformers==6.3.0"]
+router = ["scikit-learn==1.9.1"]
+faiss = ["faiss-cpu==1.16.0"]
+datasets = ["pyarrow==26.0.1"]
+storage = [
+    "asyncpg>=0.31,<1", "neo4j>=5,<7", "pgvector>=0.4.2,<1",
+    "psycopg[binary,pool]>=3.3,<4", "pymilvus>=2.6.2,<2.7", "qdrant-client==1.16.2",
+]
+report = ["matplotlib>=3.10,<4"]
+evaluation = ["ragas==0.4.4", "openai>=2,<3"]
+community = ["igraph>=0.11,<2"]
+schema = ["llama-index-core==0.14.26"]
+tracing = ["langfuse==5.2.0"]
+
+[dependency-groups]
+dev = ["pytest==9.2.0", "pytest-cov==7.0.0", "ruff==0.17.6", "mypy==2.4.1"]
+
+[project.scripts]
+elevate-rag = "elevate_rag.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/elevate_rag"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: integration with an installed extra or external service"]

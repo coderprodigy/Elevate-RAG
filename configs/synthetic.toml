@@ -1,0 +1,46 @@
+synthetic = true
+seed = 42
+chunk_size = 512
+overlap = 64
+context_budget = 4096
+candidates = 50
+rerank_k = 8
+vector_store = "faiss"
+graph_vector_store = "nano"
+graph_store = "networkx"
+fallback_threshold = 0.35
+initial_route = "V4"
+
+[models.embedding]
+provider = "fixture"
+model = "signed-hash-embedder"
+revision = "1"
+dimensions = 256
+context_window = 4096
+
+[models.reranking]
+provider = "fixture"
+model = "token-overlap-reranker"
+revision = "1"
+
+[models.generation]
+provider = "fixture"
+model = "line-lookup-generator"
+revision = "1"
+context_window = 8192
+
+[models.extraction]
+provider = "fixture"
+model = "station-beacon-extractor"
+revision = "1"
+context_window = 16384
+
+[models.keywords]
+provider = "fixture"
+model = "token-keywords"
+revision = "1"
+
+[models.router]
+provider = "fixture"
+model = "theme-router"
+revision = "1"

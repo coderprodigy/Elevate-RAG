@@ -1,0 +1,245 @@
+{
+  "source": "Post-cleanup local test rerun",
+  "passed": 55,
+  "skipped": 3,
+  "failed": 0,
+  "offline_v4": {
+    "complete": true,
+    "attempted": 20,
+    "errors": 0
+  },
+  "cases": [
+    {
+      "test": "tests.e2e.test_cli_and_benchmarks::test_cli_runs_stages_and_validates_manifest",
+      "status": "passed"
+    },
+    {
+      "test": "tests.e2e.test_cli_and_benchmarks::test_level_a_faiss_smoke",
+      "status": "passed"
+    },
+    {
+      "test": "tests.e2e.test_cli_and_benchmarks::test_external_comparison_preserves_boundary_and_failures",
+      "status": "passed"
+    },
+    {
+      "test": "tests.e2e.test_experiment::test_twenty_questions_resume_and_compare",
+      "status": "passed"
+    },
+    {
+      "test": "tests.e2e.test_experiment::test_lightrag_persistence_modes_and_fallback",
+      "status": "passed"
+    },
+    {
+      "test": "tests.e2e.test_experiment::test_experiment_matrix",
+      "status": "passed"
+    },
+    {
+      "test": "tests.e2e.test_experiment::test_interrupted_run_retains_completed_question_checkpoints",
+      "status": "passed"
+    },
+    {
+      "test": "tests.e2e.test_experiment::test_v4_tuning_freezes_development_only",
+      "status": "passed"
+    },
+    {
+      "test": "tests.e2e.test_suite_and_pilot::test_suite_resolves_one_factor_and_keeps_independent_workflows",
+      "status": "passed"
+    },
+    {
+      "test": "tests.e2e.test_suite_and_pilot::test_suite_runs_repetitions_and_summarizes",
+      "status": "passed"
+    },
+    {
+      "test": "tests.e2e.test_suite_and_pilot::test_graph_pilot_does_not_publish_full_index",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_live_postgres::test_database_graph_and_vector_share_passages[pgvector-postgres]",
+      "status": "skipped"
+    },
+    {
+      "test": "tests.integration.test_live_postgres::test_database_graph_and_vector_share_passages[milvus-networkx]",
+      "status": "skipped"
+    },
+    {
+      "test": "tests.integration.test_live_qdrant::test_qdrant_native_graph_and_dense_share_one_passage_collection",
+      "status": "skipped"
+    },
+    {
+      "test": "tests.integration.test_optional_integrations::test_budgeted_ragas_sdk_with_mocked_judge_response",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_optional_integrations::test_llamaindex_schema_adapter_keeps_supported_edges",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_optional_integrations::test_community_detection_and_report_candidates",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_split_keeps_duplicate_queries_together_and_preserves_total",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_ranked_metrics_deduplicate_hits_and_preserve_indexed_scoring",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_context_budget_uses_serialized_chat_token_count",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_boolean_questions_do_not_dilute_entity_coverage",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_generator_tier_does_not_change_shared_graph_identity",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_paid_reservations_are_serialized_across_clients",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_cache_rejects_nonobject_and_tampered_value",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_embedding_rejects_invalid_provider_indices[True]",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_embedding_rejects_invalid_provider_indices[0]",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_embedding_rejects_invalid_provider_indices[-1]",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_embedding_batches_deduplicate_and_keep_order",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_native_checkpoint_repairs_torn_tail_but_rejects_duplicate",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_native_export_rejects_rehashed_question_tampering",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_real_run_rejects_router_from_overlapping_benchmark",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_phase2_regressions::test_one_class_development_router_round_trips_as_a_constant",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_providers_routing::test_cached_embeddings_have_stable_dimensions",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_providers_routing::test_budget_persists_and_cache_detects_corruption",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_providers_routing::test_provider_rate_limit_and_invalid_credentials",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_providers_routing::test_router_with_query_types_and_offline_oracle",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_providers_routing::test_r4_calibration_and_cost_regret",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_providers_routing::test_budget_configuration_disallows_remote_calls_without_prices",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_reference_tracing::test_framework_launcher_checks_boundaries_and_freezes_execution",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_reference_tracing::test_reference_settings_reject_remote_models",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_reference_tracing::test_native_llamaindex_indexes_and_quotes_local_passages",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_reference_tracing::test_langfuse_exports_metadata_and_redacts_exception",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_reference_tracing::test_external_outcomes_can_be_graded_with_the_independent_judge",
+      "status": "passed"
+    },
+    {
+      "test": "tests.integration.test_shared_passages::test_shared_view_uses_one_vector_and_validates_graph_writes",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_data::test_chunk_overlap_and_original_offsets",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_data::test_paragraph_boundaries",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_data::test_fixture_integrity_and_deterministic_partitions",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_data::test_invalid_annotations",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_data::test_hotpot_support_offsets",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_data::test_musique_both_labels_and_gold",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_data::test_ragrouter_reads_published_json_lines_and_document_ids",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_data::test_nq_support_and_distractors",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_data::test_multihop_evidence_and_graphrag_metadata",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_data::test_malformed_jsonl_has_location",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_retrieval_evaluation::test_sparse_dense_and_rrf",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_retrieval_evaluation::test_context_cap_and_citations",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_retrieval_evaluation::test_evidence_metrics_and_exact_match",
+      "status": "passed"
+    },
+    {
+      "test": "tests.unit.test_retrieval_evaluation::test_paired_statistics_and_audit",
+      "status": "passed"
+    }
+  ]
+}

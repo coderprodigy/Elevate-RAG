@@ -1,0 +1,529 @@
+{
+  "clean_offline_v4": {
+    "attempted": 20,
+    "complete": true,
+    "errors": 0
+  },
+  "data_corrections": {
+    "cross_workload_overlap": {
+      "all_benchmarks": 760,
+      "main_benchmarks_only": 0,
+      "normalization": "casefold plus whitespace collapse",
+      "pair_counts": {
+        "graphrag-medical dev → ragrouter-bench heldout": 284,
+        "musique dev → ragrouter-bench heldout": 93,
+        "ragrouter-bench dev → graphrag-medical heldout": 290,
+        "ragrouter-bench dev → musique heldout": 93
+      }
+    },
+    "multihop_refusals": 301,
+    "within_dataset_overlaps_cleared": {
+      "graphrag-medical": 3,
+      "ragrouter-bench": 31
+    }
+  },
+  "experiment_planning_dry_runs": {
+    "E1": {
+      "configured_arms": 30,
+      "separate_or_pending": 0,
+      "source": {
+        "sha256": "a749e8fffbaf45c9ecadcbe89dd2f54671a7902f832bc9366b752f95635b7aa0",
+        "workspace_path": "artifacts/phase2/e1-e6/E1.json"
+      }
+    },
+    "E2": {
+      "configured_arms": 30,
+      "separate_or_pending": 8,
+      "source": {
+        "sha256": "a52c0f0dd60903c80e64a2e6046307d160cff664475daa8e7f1227e2e908a2df",
+        "workspace_path": "artifacts/phase2/e1-e6/E2.json"
+      }
+    },
+    "E3": {
+      "configured_arms": 60,
+      "separate_or_pending": 13,
+      "source": {
+        "sha256": "c2cbe28d0c8f6e972e60a2df0d8bdac62da4d46d660da90f84bcad08bd031ec0",
+        "workspace_path": "artifacts/phase2/e1-e6/E3.json"
+      }
+    },
+    "E4": {
+      "configured_arms": 16,
+      "separate_or_pending": 8,
+      "source": {
+        "sha256": "2d152b0634b1d2ffe7709934cec1193ca94ce58ec79ae756a990e5aafdfd02b2",
+        "workspace_path": "artifacts/phase2/e1-e6/E4.json"
+      }
+    },
+    "E5": {
+      "configured_arms": 54,
+      "separate_or_pending": 12,
+      "source": {
+        "sha256": "f236a2947112d45cc812c227ac76ebab0277caa3ea1b23ae2bc173a9ac77123d",
+        "workspace_path": "artifacts/phase2/e1-e6/E5.json"
+      }
+    },
+    "E6": {
+      "configured_arms": 24,
+      "separate_or_pending": 12,
+      "source": {
+        "sha256": "5054813ac9fcd988faf4decd103193f7a561099318ee8bc18ef4d7f5ba124768",
+        "workspace_path": "artifacts/phase2/e1-e6/E6.json"
+      }
+    }
+  },
+  "fixture_r4_resume": {
+    "attempted": 20,
+    "complete": true,
+    "errors": 0
+  },
+  "live_database_fixture_checks_earlier_implementation": {
+    "memgraph": {
+      "deselected": 0,
+      "passed": 1,
+      "seconds": 4.23,
+      "source": {
+        "sha256": "03685b987e2a189951a4bc6a142afa91476380b970cad1521fab178d775e2923",
+        "workspace_path": "artifacts/completion/live-memgraph.txt"
+      }
+    },
+    "milvus": {
+      "deselected": 1,
+      "passed": 1,
+      "seconds": 10.79,
+      "source": {
+        "sha256": "65bb7933519c815193c4aacf1b83b8efa05ba0bf391879463a3fd104f61eadab",
+        "workspace_path": "artifacts/completion/live-milvus.txt"
+      }
+    },
+    "postgres": {
+      "deselected": 1,
+      "passed": 1,
+      "seconds": 29.56,
+      "source": {
+        "sha256": "adf9b0a11e22ddf3a55486eb5c3a343d2d7b19b2ed9ef0feceebd018441038d2",
+        "workspace_path": "artifacts/completion/live-postgres.txt"
+      }
+    },
+    "qdrant": {
+      "deselected": 0,
+      "passed": 1,
+      "seconds": 2.81,
+      "source": {
+        "sha256": "f0f27487f17dd9fb792ee4ae39fb569dac181a58044719cf1e82e9d1a902d200",
+        "workspace_path": "artifacts/completion/live-qdrant.txt"
+      }
+    },
+    "qdrant-neo4j": {
+      "deselected": 0,
+      "passed": 1,
+      "seconds": 6.43,
+      "source": {
+        "sha256": "bd208c6e19d7a0d24adf821371c74bcad804826588fccca00c701861e01e4747",
+        "workspace_path": "artifacts/completion/live-qdrant-neo4j.txt"
+      }
+    }
+  },
+  "model_availability_probes": {
+    "BAAI/bge-m3": {
+      "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+      "status": 200,
+      "weight_files": 0
+    },
+    "BAAI/bge-reranker-v2-m3": {
+      "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+      "status": 200,
+      "weight_files": 1
+    },
+    "Qwen/Qwen3.6-35B-A3B": {
+      "revision": "345d467b117d1fd5eda9b879a5988de9ae5f47a7",
+      "status": 200,
+      "weight_files": 26
+    },
+    "loopback_generation_listener": {
+      "address": "127.0.0.1:8080",
+      "reachable": false
+    }
+  },
+  "native_framework_fixtures": {
+    "hipporag2": {
+      "attempted": 2,
+      "expected": 2,
+      "failed": 0,
+      "fixture_model_service": true,
+      "source": {
+        "sha256": "79192a09ddb8ef4d80b7d68160dab34e3d27ca0e75fd1a4c27b1f9c60dd94ac1",
+        "workspace_path": "artifacts/phase2/hipporag-verified/run/report.md"
+      },
+      "version": "2.0.0a5"
+    },
+    "llamaindex-property-graph": {
+      "attempted": 2,
+      "expected": 2,
+      "failed": 0,
+      "fixture_model_service": true,
+      "source": {
+        "sha256": "c71c4cc53013307a7753feef464b8e64f177b8162e7f3a3b73fc52b9c30bbb36",
+        "workspace_path": "artifacts/completion/native-llamaindex/output/report.md"
+      },
+      "version": "0.14.26"
+    },
+    "microsoft-graphrag": {
+      "attempted": 2,
+      "expected": 2,
+      "failed": 0,
+      "fixture_model_service": true,
+      "source": {
+        "sha256": "b769ddbbdcf67b4ebcff44e8155e683934e64829aee40d327d4c9a01341eb6b8",
+        "workspace_path": "artifacts/phase2/microsoft-final/run/report.md"
+      },
+      "version": "3.3.0"
+    },
+    "neo4j-graphrag": {
+      "attempted": 2,
+      "expected": 2,
+      "failed": 0,
+      "fixture_model_service": true,
+      "source": {
+        "sha256": "8a5edd38ceb502a76f04aab287f30a7a7341e6758529eba8061552cd2b4dc414",
+        "workspace_path": "artifacts/completion/native-neo4j-apoc/output/report.md"
+      },
+      "version": "1.24.0"
+    }
+  },
+  "phase2_qdrant_repeat": "Cancelled after the local Docker daemon stopped responding",
+  "public_model_tier_metadata": {
+    "BAAI/bge-small-en-v1.5": {
+      "gated": false,
+      "revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+      "status": 200
+    },
+    "Qwen/Qwen3-Embedding-8B": {
+      "gated": false,
+      "revision": "1d8ad4ca9b3dd8059ad90a75d4983776a23d44af",
+      "status": 200
+    },
+    "google/gemma-4-12B-it": {
+      "gated": false,
+      "revision": "43c9d014b231474fa7212dbb48a762566c2b255d",
+      "status": 200
+    },
+    "google/gemma-4-26B-A4B-it": {
+      "gated": false,
+      "revision": "4d7ae4984b7db7de8f8457170b3f1a419ee76d52",
+      "status": 200
+    },
+    "google/gemma-4-E4B-it": {
+      "gated": false,
+      "revision": "4ecc2ba63bcac23ba4a767fc87025b1450f84c9c",
+      "status": 200
+    }
+  },
+  "research_estimates": {
+    "assumptions": {
+      "mean_generation_input_tokens": 2800,
+      "mean_generation_output_tokens": 200,
+      "mean_judge_input_tokens": 1200,
+      "mean_judge_output_tokens": 200,
+      "seconds_per_generation_scenario": [
+        2,
+        6
+      ],
+      "use_peak_configured_prices": true
+    },
+    "blocks": {
+      "E1": {
+        "evaluated_questions": 34915,
+        "internal_arms": 30,
+        "warmup_questions": 0
+      },
+      "E2": {
+        "evaluated_questions": 34915,
+        "external_arms": 8,
+        "external_questions": 14612,
+        "internal_arms": 30,
+        "warmup_questions": 0
+      },
+      "E3": {
+        "evaluated_questions": 76813,
+        "internal_arms": 66,
+        "maximum_extra_fallback_calls": 6983,
+        "router_calls": 6983,
+        "separate_measurement_arms": 7,
+        "warmup_questions": 0
+      },
+      "E4": {
+        "evaluated_questions": 14400,
+        "internal_arms": 16,
+        "separate_measurement_arms": 8,
+        "warmup_questions": 48000
+      },
+      "E5": {
+        "evaluated_questions": 80915,
+        "internal_arms": 66,
+        "warmup_questions": 0
+      },
+      "E6": {
+        "evaluated_questions": 40842,
+        "internal_arms": 36,
+        "warmup_questions": 0
+      }
+    },
+    "classification": "planning estimates; no model requests made",
+    "dataset_heldout_counts": {
+      "graphrag-medical": 1650,
+      "graphrag-novel": 1608,
+      "hotpotqa": 800,
+      "multihop-rag": 2045,
+      "musique": 480,
+      "natural-questions": 400
+    },
+    "exclusions": [
+      "indexing, warmup judge traffic, optional RAGAS and pairwise judging, model refresh, transport retries, external frameworks, paid E5/E6 tier rates, concurrency or discount effects"
+    ],
+    "internal_scenario": {
+      "judge_cost_if_all_internal_rows_receive_one_grade_usd": 671.9328,
+      "judge_input_tokens": 339360000,
+      "judge_output_tokens": 56560000,
+      "maximum_generation_calls_including_warmup_and_one_fallback": 337783,
+      "mean_scenario_generation_input_tokens": 945792400,
+      "mean_scenario_generation_output_tokens": 67556600,
+      "serial_generation_only_hours": [
+        187.65722222222223,
+        562.9716666666667
+      ]
+    }
+  },
+  "retrieval_evaluation": {
+    "changes": [
+      "Recall uses unique pre-reranker candidate passages",
+      "Context metrics use passages actually supplied",
+      "Identical passages cannot inflate nDCG",
+      "Exact serialized chat budget is checked"
+    ],
+    "measured_profile": {
+      "by_document": {
+        "median_seconds": 0.011631916044279933,
+        "score_signature": "ca0a8b1379a99d7bb066b5d0a8126cb2c3fa2b9ba61a61dc063289f6da874334",
+        "seconds": [
+          0.02841379214078188,
+          0.011173415929079056,
+          0.012108166934922338,
+          0.011631916044279933,
+          0.009276167023926973
+        ]
+      },
+      "development_questions": 100,
+      "full_scan": {
+        "median_seconds": 0.49475937499664724,
+        "score_signature": "ca0a8b1379a99d7bb066b5d0a8126cb2c3fa2b9ba61a61dc063289f6da874334",
+        "seconds": [
+          0.4694727919995785,
+          0.4988579999189824,
+          0.4886377090588212,
+          0.49475937499664724,
+          0.4982482090126723
+        ]
+      },
+      "passages": 18647
+    },
+    "source": {
+      "sha256": "8a18f8dc055cd2687cba642a8eefc2541819f18268cf2729c150fd432a0b1fd0",
+      "workspace_path": "artifacts/phase2/performance/metrics.json"
+    }
+  },
+  "router_cross_validation": {
+    "router-domain-holdout": {
+      "folds": [
+        {
+          "accuracy": 0.4688818565400844,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.45730574370709426,
+          "test_size": 1896,
+          "training_digest": "27874722e1c18e56e628710ef8608270695452dfa000ab535b6c4f98566ac149",
+          "training_size": 5831
+        },
+        {
+          "accuracy": 0.6665673420738975,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.6735934635368915,
+          "test_size": 3356,
+          "training_digest": "3ddf74cf1bb080f02716a578eeb1700a8f9225bfdf46dd4b9735b856f477ec1f",
+          "training_size": 4371
+        },
+        {
+          "accuracy": 0.7787979966611018,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.7875319351462878,
+          "test_size": 1198,
+          "training_digest": "06aa095d36a0090cdaf25029e5a2d45dbc48e9b4cb4852cc64b61b495a1b7e15",
+          "training_size": 6529
+        },
+        {
+          "accuracy": 0.8731401722787784,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.8678375543220954,
+          "test_size": 1277,
+          "training_digest": "80fa449933252b8c2e06ee1d05dc30b3b38baf2b81bead0f8bb99a427d7903d7",
+          "training_size": 6450
+        }
+      ],
+      "source": {
+        "sha256": "3bd3f0def8c5f11532e68652fcdc462eae9a624fabacc36d87384876ad5c82ba",
+        "workspace_path": "artifacts/phase2/router-domain-holdout.json"
+      }
+    },
+    "router-five-fold": {
+      "folds": [
+        {
+          "accuracy": 0.9301423027166882,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.9280384408281189,
+          "test_size": 1546,
+          "training_digest": "f4e32b820d1f8614f592fa6dab8becc0c1abb2b2b8f1840b4275357e17a1f282",
+          "training_size": 6181
+        },
+        {
+          "accuracy": 0.9398058252427185,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.9364947610753594,
+          "test_size": 1545,
+          "training_digest": "52284c5ff07143c6ae9044f6add5aedd566679a1cd0cefbacc891b87edce22f6",
+          "training_size": 6182
+        },
+        {
+          "accuracy": 0.9255663430420712,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.9221878317274305,
+          "test_size": 1545,
+          "training_digest": "35c361a1da33f104357c4f68fac0079a1870d57167b72808743ea599e776ee6a",
+          "training_size": 6182
+        },
+        {
+          "accuracy": 0.9184993531694696,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.9146410602906307,
+          "test_size": 1546,
+          "training_digest": "901921fa0b85c604a9e66e5b5d898b41112554a121cbeb283e1e3acd81e5cfff",
+          "training_size": 6181
+        },
+        {
+          "accuracy": 0.9145631067961165,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.909552678731052,
+          "test_size": 1545,
+          "training_digest": "da7feec323b5a817b9962c4011be904cb0aeb91975ed16cc0a8732a4101ae2fd",
+          "training_size": 6182
+        }
+      ],
+      "source": {
+        "sha256": "57578e7e0a709e90b1a49801b9eb98f0579d73e6b135dfb7cfc8551db76d2464",
+        "workspace_path": "artifacts/phase2/router-five-fold.json"
+      }
+    },
+    "router-main-holdout": {
+      "folds": [
+        {
+          "accuracy": 0.3567961165048544,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.27185075469036535,
+          "test_size": 412,
+          "training_digest": "65e7f94d4995af1451053814818c1be7d7dc4bbabcfd475e1c89d9040db1a79e",
+          "training_size": 1333
+        },
+        {
+          "accuracy": 0.32587064676616917,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.19294892790493964,
+          "test_size": 402,
+          "training_digest": "a28e1858b847e98e957bf59087408e96ce553402848ea0ee1d7eb9f4885f395d",
+          "training_size": 1343
+        },
+        {
+          "accuracy": 0.425,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.16283524904214558,
+          "test_size": 200,
+          "training_digest": "8b828f0f7aea6ec21121387acc6d35b1c86a9d8c106ce12d77fb3af48df889ec",
+          "training_size": 1545
+        },
+        {
+          "accuracy": 0.27984344422700586,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.1333359002002156,
+          "test_size": 511,
+          "training_digest": "628e8d88e8848303ce4be4ecb8f21f147659d75dc98ad0db2069eaea0d86c48a",
+          "training_size": 1234
+        },
+        {
+          "accuracy": 0.575,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.24338624338624337,
+          "test_size": 120,
+          "training_digest": "f889a19cacf0ba954a3a88bd7ffab03bf3b599583915de7efeb24d53d27cd7b2",
+          "training_size": 1625
+        },
+        {
+          "accuracy": 0.12,
+          "excluded_duplicate_training_rows": 0,
+          "macro_f1": 0.07142857142857142,
+          "test_size": 100,
+          "training_digest": "5929f04fb03fe971a3160469c059e1ee95f4fc2a7d5afcd8c17f24b51e90adf3",
+          "training_size": 1645
+        }
+      ],
+      "source": {
+        "sha256": "22bc467a1eb2e0eea8b3838d078094f0cfb9a07cc7406f9547ade909a816ac8d",
+        "workspace_path": "artifacts/phase2/router-main-holdout.json"
+      }
+    }
+  },
+  "scope": "Local implementation and Phase 2 verification, prior to repository checkpoint cleanup",
+  "shared_passage_index": {
+    "faiss_membership_check": {
+      "behavior_hash": "6b8afa0c2f80d8c7c83a302c733c0b26fe3b2829cdbee4099bd0f5b7eb00e905",
+      "chunks": 20,
+      "vectors_checked": 20
+    },
+    "graph_fixture": {
+      "chunks": 20,
+      "edges": 20,
+      "nodes": 40,
+      "passage_index_key": "d478c54abc8c31a606ef314f381ccc6065b5b225a42ec220d8fc568202ecd8e3"
+    },
+    "separate_graph_pilot": {
+      "chunks": 1,
+      "corpus_chunks": 20,
+      "passage_index_key": "95505338c39048db21d8853f59257a85d83a5f6b7e146dbd12b6a79bde697866",
+      "pilot": true
+    }
+  },
+  "test_results": {
+    "phase1": {
+      "passed": 29,
+      "seconds": 39.21,
+      "skipped": 0,
+      "source": {
+        "sha256": "556190be07d190c214a4dc64d659436cfa0bc53ab3f0e15120407d2547096809",
+        "workspace_path": "artifacts/delivery/tests.txt"
+      }
+    },
+    "phase2": {
+      "core_line_coverage_percent": 87.13,
+      "package_line_coverage_percent": 75.21,
+      "passed": 55,
+      "seconds": 22.97,
+      "skipped": 3,
+      "sources": [
+        {
+          "sha256": "2cdb2275b22635dc6eae5d36fdce23f39a74dd4e9298a57101f2e4e7ba51f137",
+          "workspace_path": "artifacts/phase2/tests.txt"
+        },
+        {
+          "sha256": "3af861ea0f5ea27ee612371b47d0b3027aa538cda8b1440e3cb17d917442a9f4",
+          "workspace_path": "artifacts/phase2/coverage.json"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,56 @@
+# Phase 2 implementation audit
+
+Raw evidence paths below refer to local workspace files. See the [checkpoint evidence](evidence/README.md) for the published summaries.
+
+The audit used the original 24-page proposal, the master implementation specification, the local source and tests, and generated artifacts. It stayed on `atlas` at HEAD `7c27716`. The [requirements matrix](REQUIREMENTS_TRACEABILITY.md) records software evidence and research status.
+
+## Reproduced defects and fixes
+
+| Finding | Fix | Evidence |
+| --- | --- | --- |
+| MultiHop-RAG contains `null_query` rows, while the loader treated only `null` as unanswerable. It also retained the `_query` suffix on classification labels. | Normalize the published labels before setting answerability and retain upstream-derived question IDs. The corrected set has 301 unanswerable and 2,255 answerable questions. | [Loader](../src/elevate_rag/datasets.py), dataset audit (local evidence, `artifacts/phase2/dataset-audit.json`) |
+| Three repeated question groups crossed partitions in GraphRAG-Bench medical and 31 crossed in RAGRouter-Bench. | Group exact case-and-whitespace-normalized duplicates in one partition. Both datasets retained their total and development target. Preserve the previous split and manifest locally. | [Splitter](../src/elevate_rag/data.py), audit (local evidence, `artifacts/phase2/dataset-audit.json`) |
+| There are 760 cross-partition exact text matches when the router benchmark and six main datasets are pooled. They come from the shared MuSiQue and medical domains. | Keep the router benchmark in independent validation. Real R2 evaluation verifies each classifier against the active dataset and development SHA-256. The audit found zero exact development-to-held-out overlaps across the six main datasets alone. | Overlap counts (local evidence, `artifacts/phase2/cross-dataset-overlap.json`), [training](../src/elevate_rag/cli.py), [experiment preflight](../src/elevate_rag/experiments.py) |
+| Retrieval Recall@50 was computed from the already truncated reranker output. A repeated candidate could also inflate nDCG. | Score the candidate ranking, deduplicate by passage ID, and score actual generation context separately. V4 tuning continues to rank its explicitly selected reranker depths on development evidence. | [Evaluation](../src/elevate_rag/evaluation.py), [regressions](../tests/integration/test_phase2_regressions.py) |
+| The generator assumed 32 framing tokens across chat templates and counted a candidate prompt twice. | Count the rendered system and user messages with the frozen tokenizer and reserve the output. Require a frozen chat tokenizer for a distinct real E5/E6 generation tier. | [Tokenizer](../src/elevate_rag/data.py), [context assembly](../src/elevate_rag/pipeline.py), [suite](../src/elevate_rag/suite.py) |
+| Changing the generator tokenizer also changed the graph identity and native passage budgeting. | Keep the graph on the fixed corpus chunk tokenizer and count final prompts with the generator's chat tokenizer. | [Graph identity](../src/elevate_rag/graph.py), [regression](../tests/integration/test_phase2_regressions.py) |
+| Boolean answers diluted graph answer-entity coverage. In MultiHop-RAG, 1,343 answers are yes/no. | Exclude non-entity labels from the coverage numerator and denominator. Require the revised coverage method and matching development hash for real graph runs. | [Graph audit](../src/elevate_rag/graph.py), [regressions](../tests/integration/test_phase2_regressions.py) |
+| The paid graph preflight added the pilot cost while ignoring other committed reservations, and only considered paid extraction. | Check exclusive ownership and existing completion first. For paid extraction or embeddings, validate the matching pilot and compare projected spend with the live ledger. Reject nonfinite or negative ledger inputs. | [Graph preflight](../src/elevate_rag/graph.py), [ledger](../src/elevate_rag/providers.py), [concurrent reservation test](../tests/integration/test_phase2_regressions.py) |
+| Requests could repeat identical input text within an embedding batch. Malformed response indices and non-object cache values could bypass the expected failure type. | Deduplicate each batch by exact input and restore the original order. Validate response types, cardinality and order. Treat corrupt cache entries as explicit failures. | [Providers](../src/elevate_rag/providers.py), [regressions](../tests/integration/test_phase2_regressions.py) |
+| Native checkpoints could become unreadable after a torn final write. Self-consistent rehashing of an altered export could change the question. Native outcomes also labelled uninstrumented spend as zero. | Retain intact lines, remove only an unterminated tail, and reject bad completed IDs. Compare exported query records with the source split. Leave native cost unavailable until measured. | [Native worker](../src/elevate_rag/reference_worker.py), [export validation](../src/elevate_rag/interop.py) |
+| The passage store could initialize before obtaining its writer lock and reload without checking the persisted manifest. The validation command did not inspect vector IDs. | Serialize creation, validate the persisted contract, and check every expected vector ID in batches in `validate-index`. | [Storage](../src/elevate_rag/storage.py), live fixture validation (local evidence, `artifacts/phase2/shared-validation.json`) |
+| A previous tuning freeze was keyed to the tuning file alone, and pairwise comparisons silently collapsed repeated rows. | Freeze the package source fingerprint. Reject duplicate rows and mismatched question manifests in comparisons. | [Tuning](../src/elevate_rag/tuning.py), [reporting](../src/elevate_rag/reporting.py) |
+
+## Dataset integrity and scoring
+
+| Dataset | Documents | Development | Held out | Evidence |
+| --- | ---: | ---: | ---: | --- |
+| Natural Questions | 18,647 | 100 | 400 | All 500 map to annotated long-answer passages with distractors retained. |
+| HotpotQA distractor | 9,787 | 200 | 800 | All 1,000 have annotated supporting sentence offsets. |
+| MuSiQue-Full | 7,982 | 120 | 480 | 500 answerable and 100 unanswerable. 577 questions have mapped supporting paragraphs. |
+| MultiHop-RAG | 609 | 511 | 2,045 | All 2,255 answerable questions retain evidence. The 301 refusal records have no reference answers. |
+| GraphRAG-Bench novel | 20 | 402 | 1,608 | All 2,010 preserve upstream evidence text. No literal passage offsets were resolved. |
+| GraphRAG-Bench medical | 1 | 412 | 1,650 | All 2,062 preserve upstream evidence text and 11 have literal passage offsets. |
+| RAGRouter-Bench | 21,460 | 1,545 | 6,182 | All 7,727 preserve evidence text and query types for independent classification. |
+
+Every required download is pinned. The audit checked raw and normalized SHA-256, unique IDs, evidence bounds and exact text overlap within each dataset. All seven rebuilt byte for byte after the fixes. Source versions and counts are in the audit artifact (local evidence, `artifacts/phase2/dataset-audit.json`). The public revision check (local evidence, `artifacts/phase2/source-revisions.json`) independently matched the published bytes for HotpotQA, MultiHop-RAG and both GraphRAG-Bench domains.
+
+EM and token F1 use the project normalization and reference alternatives. Refusal uses the upstream answerability label. Positional evidence metrics require matched offsets or document-level annotations. GraphRAG-Bench export and import schemas were checked against the pinned upstream evaluator. Its model-based relevance and evidence recall still need an authorized evaluator run. [Upstream retrieval evaluator](https://github.com/GraphRAG-Bench/GraphRAG-Benchmark/blob/fdbab5959b18c96532580877ffe27d112bccc0ec/Evaluation/retrieval_eval.py)
+
+## Physical passage index
+
+| Configured project vector backend | Sharing boundary | Evidence |
+| --- | --- | --- |
+| FAISS HNSW | V2–V4 and LightRAG hold the same object in a combined pipeline and reload the same persisted file between processes. | [Reuse test](../tests/integration/test_shared_passages.py), Phase 2 validation (local evidence, `artifacts/phase2/shared-validation.json`) |
+| Qdrant | One passage collection per deterministic corpus key and endpoint. Native entity and relation collections have separate names. | Collection count and HNSW check (local evidence, `artifacts/completion/live-qdrant.txt`), Neo4j graph check (local evidence, `artifacts/completion/live-qdrant-neo4j.txt`) |
+| Milvus | One named passage collection per deterministic corpus key and server database. | Live Milvus check (local evidence, `artifacts/completion/live-milvus.txt`) |
+| PostgreSQL with pgvector | One named passage table per deterministic corpus key and database. LightRAG uses its own entity/relation tables and Apache AGE graph data. | Live PostgreSQL check (local evidence, `artifacts/completion/live-postgres.txt`) |
+| NumPy exact | One persisted normalized vector matrix. The exact in-memory index is reconstructed per process and shared between the two readers within that process. | [Passage store](../src/elevate_rag/storage.py), [core retrieval tests](../tests/unit/test_retrieval_evaluation.py) |
+
+The chunk ID binds normalized embedding text and the original document offsets. The LightRAG identifier uses document ID and normalized text. If a document repeats identical text at multiple offsets, one native identifier refers to all corresponding corpus occurrences. Native ranking can collapse those copies. Every mapped occurrence remains attributable to its original offsets. Full and 5% pilot artifacts use distinct keys. Graph entity and relation vectors are indexed independently by design. Server changes require the same endpoint and namespace across processes for physical reuse. Ordinary opens validate the stored contract and size. The explicit validation command checks full membership. The remote checks linked here were captured in the implementation pass. The Phase 2 Qdrant repeat was cancelled after the local Docker daemon stopped responding.
+
+## Frameworks and external scope
+
+Microsoft GraphRAG 3.3.0 built its graph and ran native global search. HippoRAG 2.0.0a5 built its OpenIE graph and ran native retrieval and QA from the pinned upstream revision. Each processed two questions in an isolated subprocess with deterministic loopback model responses. The initial HippoRAG installation exhausted disk space during Torch extraction. Cleaning temporary audit caches enabled the retry. The first fixture run used the wrong JSON shape for its triple prompt, which was corrected before the successful run. LlamaIndex and Neo4j GraphRAG retain their previous successful fixture artifacts. These runs verified runtime integration. Microsoft run (local evidence, `artifacts/phase2/microsoft-final/run/report.md`), HippoRAG run (local evidence, `artifacts/phase2/hipporag-verified/run/report.md`), LlamaIndex run (local evidence, `artifacts/completion/native-llamaindex/output/report.md`), Neo4j run (local evidence, `artifacts/completion/native-neo4j-apoc/output/report.md`)
+
+The missing dependencies for the research results are tracked in [known issues](KNOWN_ISSUES.md) and the [execution plan](RESEARCH_EXECUTION_PLAN.md).
