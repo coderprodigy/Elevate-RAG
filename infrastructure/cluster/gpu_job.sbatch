@@ -31,13 +31,15 @@ case "$STEP" in
     : "${DATASETS:?set DATASETS, e.g. DATASETS='multihop_rag hotpotqa'}"
     sets=()
     for kv in ${INDEX_SETS:-}; do sets+=(--set "$kv"); done
-    mkdir -p "$ELEVATE_ROOT/audit"
     for ds in $DATASETS; do
       echo "[$(date +%T)] index build: $ds ${INDEX_SETS:-}"
       "${ERAG_CMD[@]}" index build "$PIPELINE" --set "dataset=$ds" ${sets[@]+"${sets[@]}"}
-      "${ERAG_CMD[@]}" index validate "$PIPELINE" --set "dataset=$ds" ${sets[@]+"${sets[@]}"} \
-        --audit-out "$ELEVATE_ROOT/audit/${ds}_triples.csv"
+      "${ERAG_CMD[@]}" index validate "$PIPELINE" --set "dataset=$ds" ${sets[@]+"${sets[@]}"}
     done
+    # Judge calibration on GroUSE (needs the judge servers, so it runs here, before any
+    # experiment job reads it). Cached: re-running costs nothing.
+    echo "[$(date +%T)] judge calibration"
+    "${ERAG_CMD[@]}" judge calibrate "$PIPELINE" --results-dir "$ELEVATE_RESULTS_DIR"
     ;;
   experiment)
     : "${EXPERIMENT:?set EXPERIMENT=configs/experiments/....yaml}"
@@ -49,7 +51,7 @@ case "$STEP" in
     [[ -n "${EXP_DATASETS:-}" ]] && extra+=(--datasets "$EXP_DATASETS")
     echo "[$(date +%T)] experiment $EXPERIMENT shard $shard ${extra[*]:-}"
     "${ERAG_CMD[@]}" experiment run "$EXPERIMENT" --pipeline "$PIPELINE" --shard "$shard" \
-      --yes ${extra[@]+"${extra[@]}"}
+      --results-dir "$ELEVATE_RESULTS_DIR" --yes ${extra[@]+"${extra[@]}"}
     ;;
   *) echo "unknown STEP=$STEP" >&2; exit 2 ;;
 esac

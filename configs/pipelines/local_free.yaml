@@ -5,7 +5,7 @@
 # This is a scaled-down stand-in for the reference configuration, NOT the reference itself:
 #   * generator/extractor is a 3B model instead of Qwen3.6-35B / Claude Haiku;
 #   * the judge is a 3B model from a different family (Meta Llama vs Qwen) — independence holds,
-#     but its reliability MUST be checked against human labels (kappa ≥ 0.6) before results count.
+#     but its scores count only after automated validation (GroUSE + a second judge, D-36).
 # Report every number from this config as "small local models".
 #
 # REQUIRED: start Ollama with a context window of at least 8192 tokens, e.g.

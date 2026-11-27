@@ -46,6 +46,7 @@ async def ingest_predictions(
     runs_root: Path,
     split: str = "test",
     judge_llm: BaseLLM | None = None,
+    judge2_llm: BaseLLM | None = None,
 ) -> dict[str, Any]:
     ds = DatasetStore.open(data_dir, dataset)
     ds.verify()
@@ -80,7 +81,12 @@ async def ingest_predictions(
             }
         )
     scored = await score_rows(
-        rows, questions, None, judge_llm=judge_llm, string_evidence_valid=ds.string_evidence_valid
+        rows,
+        questions,
+        None,
+        judge_llm=judge_llm,
+        judge2_llm=judge2_llm,
+        string_evidence_valid=ds.string_evidence_valid,
     )
     run_id = f"EXT-{system}-{dataset}-{stable_hash([str(path), split], 8)}"
     d = runs_root / "EXT" / run_id

@@ -5,13 +5,16 @@
 #
 #   generator / extractor / keywords / router : Qwen/Qwen3.6-35B-A3B  (vLLM, ELEVATE_GEN_URL)
 #   judge                                     : microsoft/phi-4      (vLLM, ELEVATE_JUDGE_URL)
+#   second judge (agreement check, D-36)      : ibm-granite/granite-3.3-8b-instruct
+#                                               (vLLM, ELEVATE_JUDGE2_URL)
 #   embedder / reranker                       : Qwen3-Embedding-0.6B / bge-reranker-v2-m3 (GPU)
 #   storage                                   : FAISS (HNSW) + NetworkX, in-process (no Docker)
 #
 # All IDs and revisions verified on Hugging Face 2026-11-27 (ungated; Apache-2.0 / MIT).
 # Smaller GPUs: serve Qwen/Qwen2.5-7B-Instruct instead (see docs/RUNNING.md, "Model sizes").
 # Thinking is disabled for Qwen3.6 (`enable_thinking: false`, per its model card) so extraction
-# and answers are direct responses; the judge must still pass the human agreement gate.
+# and answers are direct responses. Judge scores count only when both judges pass GroUSE
+# calibration (`elevate-rag judge calibrate`) and agree with kappa >= 0.6 (D-36).
 extends: reference.yaml
 name: cluster-gpu
 models:
@@ -35,6 +38,17 @@ models:
     revision: 2db69c1c3e91a05d2c64a3185acfbaf36f744e25
     base_url: ${ELEVATE_JUDGE_URL}
     family: phi
+    params: {seed: 0}
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+    max_concurrency: 32
+    timeout_s: 900
+  judge2:  # verified on Hugging Face 2026-11-27: ungated, Apache-2.0, 16.3 GB bf16
+    provider: openai-compatible
+    model: ibm-granite/granite-3.3-8b-instruct
+    revision: 51dd4bc2ade4059a6bd87649d68aa11e4fb2529b
+    base_url: ${ELEVATE_JUDGE2_URL}
+    family: granite
     params: {seed: 0}
     price_input_per_mtok: 0.0
     price_output_per_mtok: 0.0

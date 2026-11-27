@@ -1,0 +1,477 @@
+{
+  "benchmark": {
+    "name": "GroUSE",
+    "repo_id": "illuin/grouse",
+    "revision": "caaaae0dacf5126279ae59609d26926e124b8032",
+    "sha256": "222bcf8224ec5dda1561d235140a3ca4ce944905cf6472262a9f5505da073aed",
+    "license": "MIT"
+  },
+  "judge": "llama3.1_8b@unpinned@judge-v1",
+  "model": "llama3.1:8b",
+  "revision": null,
+  "judge_version": "judge-v1",
+  "created_at": "2026-11-27T16:10:43+00:00",
+  "n": 63,
+  "passed": 49,
+  "pass_rate": 0.7777777777777778,
+  "threshold": 0.8,
+  "calibrated": false,
+  "invalid": 0,
+  "by_test_type": {
+    "Highest marks": {
+      "n": 27,
+      "pass_rate": 0.9629629629629629
+    },
+    "Low answer relevancy": {
+      "n": 9,
+      "pass_rate": 1.0
+    },
+    "Low completeness": {
+      "n": 27,
+      "pass_rate": 0.5185185185185185
+    }
+  },
+  "items": [
+    {
+      "case_id": "grouse-000",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-003",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-005",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-007",
+      "test_type": "Low answer relevancy",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-009",
+      "test_type": "Low completeness",
+      "expected": "not_correct",
+      "verdict": "correct",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-010",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-011",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-016",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-019",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-021",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "partial",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-023",
+      "test_type": "Low answer relevancy",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-025",
+      "test_type": "Low completeness",
+      "expected": "not_correct",
+      "verdict": "correct",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-026",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-027",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "partial",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-032",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-035",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-037",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-039",
+      "test_type": "Low answer relevancy",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-041",
+      "test_type": "Low completeness",
+      "expected": "not_correct",
+      "verdict": "correct",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-042",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-043",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "partial",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-048",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-051",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-053",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-055",
+      "test_type": "Low answer relevancy",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-057",
+      "test_type": "Low completeness",
+      "expected": "not_correct",
+      "verdict": "correct",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-058",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-059",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-064",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-067",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-069",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-071",
+      "test_type": "Low answer relevancy",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-073",
+      "test_type": "Low completeness",
+      "expected": "not_correct",
+      "verdict": "correct",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-074",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-075",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "partial",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-080",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-083",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-085",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-087",
+      "test_type": "Low answer relevancy",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-089",
+      "test_type": "Low completeness",
+      "expected": "not_correct",
+      "verdict": "correct",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-090",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-091",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-096",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-099",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-101",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-103",
+      "test_type": "Low answer relevancy",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-105",
+      "test_type": "Low completeness",
+      "expected": "not_correct",
+      "verdict": "correct",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-106",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-107",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-112",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-115",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-117",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-119",
+      "test_type": "Low answer relevancy",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-121",
+      "test_type": "Low completeness",
+      "expected": "not_correct",
+      "verdict": "correct",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-122",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-123",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "partial",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-128",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-131",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-133",
+      "test_type": "Highest marks",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-135",
+      "test_type": "Low answer relevancy",
+      "expected": "correct",
+      "verdict": "correct",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-137",
+      "test_type": "Low completeness",
+      "expected": "not_correct",
+      "verdict": "correct",
+      "passed": false
+    },
+    {
+      "case_id": "grouse-138",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    },
+    {
+      "case_id": "grouse-139",
+      "test_type": "Low completeness",
+      "expected": "wrong",
+      "verdict": "wrong",
+      "passed": true
+    }
+  ]
+}

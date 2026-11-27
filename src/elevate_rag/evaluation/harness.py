@@ -37,7 +37,7 @@ from elevate_rag.evaluation.metrics import (
 from elevate_rag.indexing.chunk_store import ChunkStore
 from elevate_rag.pipeline import QueryRecord
 from elevate_rag.providers.llm import BaseLLM
-from elevate_rag.stats import bootstrap_ci
+from elevate_rag.stats import bootstrap_ci, cohen_kappa
 from elevate_rag.types import Query, Question
 from elevate_rag.utils import append_jsonl, read_jsonl, repair_jsonl_tail
 
@@ -86,12 +86,23 @@ async def run_questions(
     return [rows[q.question_id] for q in questions if q.question_id in rows]
 
 
+def context_texts(row: dict[str, Any], store: ChunkStore | None) -> list[str]:
+    """The context the generator saw: chunk texts from the store, or an external system's
+    `context_texts` (predictions contract)."""
+    ids = [i for i in row.get("context_item_ids", []) if store and i in store]
+    texts = [store[i].text for i in ids] if store else []
+    if not texts and row.get("context_texts"):
+        texts = list(row["context_texts"])
+    return texts
+
+
 async def score_rows(
     rows: Sequence[dict[str, Any]],
     questions: Sequence[Question],
     store: ChunkStore | None,
     *,
     judge_llm: BaseLLM | None = None,
+    judge2_llm: BaseLLM | None = None,
     metrics_llm: BaseLLM | None = None,
     ks: Sequence[int] = (5, 10, 50),
     concurrency: int = 4,
@@ -101,6 +112,7 @@ async def score_rows(
     undefined instead of a misleadingly low number."""
     qmap = {q.question_id: q for q in questions}
     judge = CorrectnessJudge(judge_llm) if judge_llm else None
+    judge2 = CorrectnessJudge(judge2_llm) if judge2_llm else None
     sem = asyncio.Semaphore(concurrency)
 
     async def one(row: dict[str, Any]) -> dict[str, Any]:
@@ -120,10 +132,7 @@ async def score_rows(
         for k in ks:
             s[f"recall@{k}"] = recall_at_k(retrieved, q.gold_doc_ids, k)
         s["ndcg@10"] = ndcg_at_k(retrieved, q.gold_doc_ids, 10)
-        context_ids = [i for i in row.get("context_item_ids", []) if store and i in store]
-        texts = [store[i].text for i in context_ids] if store else []
-        if not texts and row.get("context_texts"):  # external systems (predictions contract)
-            texts = list(row["context_texts"])
+        texts = context_texts(row, store)
         s["evidence_recall"] = (
             evidence_recall(texts, q.gold_evidence) if string_evidence_valid else None
         )
@@ -134,9 +143,17 @@ async def score_rows(
                 )
                 s["judge"] = v.verdict
                 s["judge_score"] = v.score
+                s["judge_rule"] = v.judged_by == "rule"  # refusal/unanswerable: no LLM involved
                 s["correct"] = None if v.verdict == "invalid" else v.verdict == "correct"
             else:
                 s["correct"] = bool(s["em"]) if q.answerable else s["refusal_correct"]
+            if judge2 is not None:
+                v2 = await judge2.judge(
+                    q.question, q.answers, ans, answerable=q.answerable, refused=refused
+                )
+                s["judge2"] = v2.verdict
+                s["judge2_score"] = v2.score
+                s["correct_judge2"] = None if v2.verdict == "invalid" else v2.verdict == "correct"
             if metrics_llm is not None and not failed:
                 ref = q.answers[0] if q.answers else ""
                 s["faithfulness"] = (
@@ -174,7 +191,7 @@ def summarize(scored: Sequence[dict[str, Any]]) -> dict[str, Any]:
             for k, v in r["scores"].items()
             if isinstance(v, int | float | bool) or v is None
         }
-        - {"answerable", "failed", "query_type"}
+        - {"answerable", "failed", "query_type", "judge_rule"}
     )
 
     def block(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
@@ -240,6 +257,39 @@ def summarize(scored: Sequence[dict[str, Any]]) -> dict[str, Any]:
         "invalid_citation_rate": sum(bool(r.get("invalid_citations")) for r in scored)
         / len(scored),
         "judge_invalid": sum(r["scores"].get("judge") == "invalid" for r in scored),
+        "judge_agreement": judge_agreement(scored),
+    }
+
+
+def judge_agreement(scored: Sequence[dict[str, Any]]) -> dict[str, Any] | None:
+    """Agreement of the two judges over the answers both actually judged with an LLM.
+
+    Answers decided by the refusal rule are excluded: both judges return the same rule verdict,
+    which would inflate agreement. Kappa is over the three verdicts (correct/partial/wrong)."""
+    pairs = [
+        (r["scores"]["judge"], r["scores"]["judge2"])
+        for r in scored
+        if "judge2" in r["scores"]
+        and not r["scores"].get("judge_rule")
+        and r["scores"].get("judge") not in (None, "invalid")
+        and r["scores"].get("judge2") not in (None, "invalid")
+    ]
+    if not any("judge2" in r["scores"] for r in scored):
+        return None
+    if not pairs:
+        return {"n": 0, "kappa": None, "raw_agreement": None}
+    a, b = [p[0] for p in pairs], [p[1] for p in pairs]
+    same = sum(x == y for x, y in pairs) / len(pairs)
+    binary_same = sum((x == "correct") == (y == "correct") for x, y in pairs) / len(pairs)
+    try:
+        kappa: float | None = cohen_kappa(a, b)
+    except ValueError:
+        kappa = None
+    return {
+        "n": len(pairs),
+        "kappa": kappa,
+        "raw_agreement": same,
+        "binary_agreement": binary_same,
     }
 
 
@@ -260,6 +310,8 @@ def write_scored(path: Path, rows: Sequence[dict[str, Any]]) -> None:
 
 
 __all__ = [
+    "context_texts",
+    "judge_agreement",
     "load_rows",
     "mean_defined",
     "per_question_correct",

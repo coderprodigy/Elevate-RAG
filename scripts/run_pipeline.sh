@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# One command for a full block: index + graph build -> graph checks (G3) -> experiment -> report.
+# One command for a full block: index + graph build -> graph checks (G3) -> judge calibration
+# (GroUSE) -> experiment (each run writes its record to results/runs/) -> report.
 # Works on a laptop, a workstation or inside a cluster job (see docs/RUNNING.md).
 #
 #   scripts/run_pipeline.sh PIPELINE.yaml EXPERIMENT.yaml DATASET OUT_DIR [--set k=v ...]
@@ -64,19 +65,21 @@ EOF
 echo "[$(stamp)] 1/4 index + graph build (log: $LOGS/${EXP_ID}_index_build.log)"
 run_step index_build "${ERAG[@]}" index build "$PIPELINE" "${SETS[@]}"
 
-echo "[$(stamp)] 2/4 graph validation: G3 coverage + triple audit sample"
-run_step validate "${ERAG[@]}" index validate "$PIPELINE" "${SETS[@]}" \
-  --audit-out "$OUT/triple_audit_sample.csv"
+echo "[$(stamp)] 2/4 graph validation (G3 coverage) and judge calibration (GroUSE)"
+run_step validate "${ERAG[@]}" index validate "$PIPELINE" "${SETS[@]}"
 sed -n '/^{/,$p' "$LOGS/${EXP_ID}_validate.log" > "$OUT/graph_validation.json"
+run_step judge_calibrate "${ERAG[@]}" judge calibrate "$PIPELINE" \
+  --results-dir "${ELEVATE_RESULTS_DIR:-results}"
 
 echo "[$(stamp)] 3/4 experiment ${EXP_ID} (log: $LOGS/${EXP_ID}_experiment.log)"
 # --pipeline: run the spec against the pipeline the index was built with (a spec names its own
 # default pipeline, e.g. S0 -> cluster_gpu.yaml, which may differ from PIPELINE).
 run_step experiment_validate "${ERAG[@]}" experiment validate "$EXPERIMENT" --pipeline "$PIPELINE"
-run_step experiment "${ERAG[@]}" experiment run "$EXPERIMENT" --pipeline "$PIPELINE" --yes
+run_step experiment "${ERAG[@]}" experiment run "$EXPERIMENT" --pipeline "$PIPELINE" --yes \
+  --results-dir "${ELEVATE_RESULTS_DIR:-results}"
 grep -E "✓|✗" "$LOGS/${EXP_ID}_experiment.log" || true
 
 echo "[$(stamp)] 4/4 report"
 run_step report "${ERAG[@]}" report --experiment "$EXP_ID" --out "$OUT/report" \
   --reference "${REFERENCE:-V4}"
-echo "[$(stamp)] done: $OUT"
+echo "[$(stamp)] done: $OUT (run records: ${ELEVATE_RESULTS_DIR:-results}/runs/INDEX.csv)"

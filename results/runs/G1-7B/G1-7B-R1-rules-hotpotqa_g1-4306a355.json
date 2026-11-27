@@ -1,0 +1,159 @@
+{
+  "record_version": 1,
+  "run_id": "G1-7B-R1-rules-hotpotqa_g1-4306a355",
+  "experiment": "G1-7B",
+  "research_question": "G1",
+  "dataset": "hotpotqa_g1",
+  "dataset_version": null,
+  "variant": {
+    "name": "R1-rules",
+    "mode": null,
+    "router": {
+      "level": "rules"
+    },
+    "overrides": {
+      "vector_store.backend": "exact",
+      "lightrag.vector_storage": "NanoVectorDBStorage",
+      "graph_store.backend": "networkx",
+      "lightrag.graph_storage": "NetworkXStorage"
+    },
+    "tune_on_dev": false
+  },
+  "split": "all",
+  "limit": null,
+  "n": 20,
+  "config_hash": "7d96d2d957390595",
+  "index_key": "bf2a71c07607867e",
+  "models": {
+    "embedder": {
+      "provider": "sentence-transformers",
+      "model": "BAAI/bge-small-en-v1.5",
+      "revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+      "family": "bge"
+    },
+    "reranker": {
+      "provider": "cross-encoder",
+      "model": "BAAI/bge-reranker-v2-m3",
+      "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+      "family": "bge"
+    },
+    "extractor": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "keyword": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "generator": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "router_llm": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "judge": {
+      "provider": "openai-compatible",
+      "model": "llama3.1:8b",
+      "revision": null,
+      "family": "llama"
+    }
+  },
+  "metrics": {
+    "correct": {
+      "mean": 0.6,
+      "ci_low": 0.4,
+      "ci_high": 0.8,
+      "n": 20
+    },
+    "em": {
+      "mean": 0.35,
+      "ci_low": 0.15,
+      "ci_high": 0.55,
+      "n": 20
+    },
+    "f1": {
+      "mean": 0.4511904761904762,
+      "ci_low": 0.2642559523809524,
+      "ci_high": 0.6429166666666667,
+      "n": 20
+    },
+    "refusal_correct": {
+      "mean": 0.8,
+      "ci_low": 0.6,
+      "ci_high": 0.95,
+      "n": 20
+    },
+    "recall@10": {
+      "mean": 1.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0,
+      "n": 20
+    },
+    "ndcg@10": {
+      "mean": 0.941410839350721,
+      "ci_low": 0.8957605893375106,
+      "ci_high": 0.9775580655243713,
+      "n": 20
+    }
+  },
+  "judge_agreement": null,
+  "judge_validation": {
+    "status": "unvalidated",
+    "reasons": [
+      "judge GroUSE pass rate 0.78 < 0.8",
+      "no second judge (models.judge2) to measure agreement"
+    ],
+    "kappa": null,
+    "kappa_min": 0.6,
+    "calibration": {
+      "judge": {
+        "pass_rate": 0.7777777777777778,
+        "n": 63,
+        "calibrated": false
+      }
+    },
+    "calibration_min": 0.8
+  },
+  "efficiency": {
+    "latency_p50_s": null,
+    "latency_p95_s": null,
+    "latency_n": 0,
+    "cache_hit_rate": 1.0,
+    "prompt_tokens_mean": 3991.05,
+    "completion_tokens_mean": 48.15,
+    "context_tokens_mean": 2491.0,
+    "cost_per_1k_queries_usd": 0.0,
+    "cost_known": true
+  },
+  "error_rate": 0.0,
+  "refusal_rate": 0.2,
+  "cost_usd": 0.0,
+  "code": {
+    "elevate_rag": "0.1.0",
+    "git_commit": "6179ad2c279daae1c4814c857c06a3223aec3d3b",
+    "git_branch": "nova",
+    "git_dirty": true,
+    "git_from_run": false
+  },
+  "environment": {
+    "elevate_rag": "0.1.0",
+    "python": "3.12.13",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "slurm_job_id": null
+  },
+  "created_at": "2026-11-27T12:00:20+00:00",
+  "completed_at": "2026-11-27T12:00:57+00:00",
+  "demo": false,
+  "raw_run_dir": "G1-7B/G1-7B-R1-rules-hotpotqa_g1-4306a355",
+  "mlflow_run_id": null
+}

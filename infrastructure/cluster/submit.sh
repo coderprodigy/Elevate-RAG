@@ -62,7 +62,7 @@ case "$cmd" in
     j3=$(STEP=report EXPERIMENT_ID=S0 sb "${cpu_opts[@]}" --job-name elevate-report \
          --dependency "afterok:$j2" infrastructure/cluster/cpu_job.sbatch)
     echo "submitted: index=$j1 -> S0=$j2 -> report=$j3"
-    echo "result: $ELEVATE_ROOT/results/S0/REPORT.md"
+    echo "result: $ELEVATE_RESULTS_DIR/S0/REPORT.md (run records: $ELEVATE_RESULTS_DIR/runs/)"
     ;;
   index)
     (( $# )) || { echo "usage: $0 index DATASET [DATASET ...]" >&2; exit 2; }
@@ -77,7 +77,7 @@ case "$cmd" in
     [[ -n "${LIMIT:-}" ]] && extra+=(--limit "$LIMIT")
     [[ -n "${EXP_DATASETS:-}" ]] && extra+=(--datasets "$EXP_DATASETS")
     # Fail fast on the login node: spec, pipeline, judge independence, budget.
-    ELEVATE_GEN_URL=pending ELEVATE_JUDGE_URL=pending "${ERAG_CMD[@]}" experiment validate \
+    ELEVATE_GEN_URL=pending ELEVATE_JUDGE_URL=pending ELEVATE_JUDGE2_URL=pending "${ERAG_CMD[@]}" experiment validate \
       "$spec" --pipeline "$PIPELINE" ${extra[@]+"${extra[@]}"}
     j=$(STEP=experiment EXPERIMENT="$spec" SHARDS="$shards" sb "${gpu_opts[@]}" \
          --job-name "elevate-$id" --array "0-$((shards - 1))" infrastructure/cluster/gpu_job.sbatch)

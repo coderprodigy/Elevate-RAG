@@ -1,9 +1,8 @@
-"""CLI workflows on the synthetic corpus: experiments, routers, benchmarks, annotation, reports,
+"""CLI workflows on the synthetic corpus: experiments, routers, benchmarks, judges, reports,
 and the external-system predictions contract."""
 
 from __future__ import annotations
 
-import csv
 import json
 from pathlib import Path
 
@@ -63,24 +62,88 @@ def test_experiment_dry_run_run_and_report(workspace: tuple[CliRunner, Path, Pat
     assert (out / "REPORT.md").exists() and (out / "results.csv").exists()
     assert (out / "paired_comparisons.csv").exists()
 
-    run_dir = next((runs / "C").glob("C-V4-*"))
-    res = runner.invoke(
-        app,
-        ["annotate", "failures", str(run_dir), str(tmp / "f.csv"), "--data-dir", str(tmp / "data")],
-    )
-    assert res.exit_code == 0, res.output
+    assert not (tmp / "results").exists()  # demo runs never write committed records
+
+
+GROUSE_ROWS = [
+    {  # complete answer -> the judge must say "correct"
+        "input": "In which year was Velmora founded?",
+        "expected_output": "Velmora was founded in 1712.",
+        "actual_output": "It was founded in 1712.",
+        "conditions": {"completeness_condition": "==5", "faithfulness_condition": "==1"},
+        "metadata": {"test_type": "Highest marks 1"},
+    },
+    {  # nothing of the reference -> "wrong"
+        "input": "In which year was Velmora founded?",
+        "expected_output": "Velmora was founded in 1712.",
+        "actual_output": "Velmora is a river port.",
+        "conditions": {"completeness_condition": "==1", "faithfulness_condition": "==1"},
+        "metadata": {"test_type": "Low completeness 1"},
+    },
+    {  # unfaithful: not applicable to a reference-based correctness judge -> skipped
+        "input": "q",
+        "expected_output": "a",
+        "actual_output": "a plus invented facts",
+        "conditions": {"completeness_condition": "==5", "faithfulness_condition": "==0"},
+        "metadata": {"test_type": "Low faithfulness 1"},
+    },
+]
+
+
+def test_runs_write_traceable_records_with_two_judges(
+    workspace: tuple[CliRunner, Path, Path],
+) -> None:
+    runner, tmp, spec = workspace
+    cfg = yaml.safe_load((tmp / "pipe.yaml").read_text())
+    cfg["demo"] = False
+    cfg["models"]["judge2"] = {"provider": "offline", "model": "judge-b", "family": "offline-b"}
+    (tmp / "pipe.yaml").write_text(yaml.safe_dump(cfg))
+    results, runs = tmp / "results", tmp / "runs"
+    grouse = tmp / "grouse.jsonl"
+    grouse.write_text("\n".join(json.dumps(r) for r in GROUSE_ROWS) + "\n")
+
     res = runner.invoke(
         app,
         [
-            "annotate",
-            "judge-sample",
-            str(run_dir),
-            str(tmp / "j.csv"),
-            "--data-dir",
-            str(tmp / "data"),
+            "judge",
+            "calibrate",
+            str(tmp / "pipe.yaml"),
+            "--grouse-file",
+            str(grouse),
+            "--results-dir",
+            str(results),
         ],
     )
-    assert res.exit_code == 0 and (tmp / "j.csv").exists()
+    assert res.exit_code == 0, res.output
+    cals = sorted((results / "judge_calibration").glob("*.json"))
+    assert len(cals) == 2  # one file per judge
+    assert all(json.loads(p.read_text())["n"] == 2 for p in cals)  # unfaithful case skipped
+
+    res = runner.invoke(
+        app,
+        ["experiment", "run", str(spec), "--runs-root", str(runs), "--results-dir", str(results)],
+    )
+    assert res.exit_code == 0, res.output
+    records = sorted((results / "runs" / "C").glob("*.json"))
+    assert len(records) == 3
+    rec = json.loads(records[0].read_text())
+    assert rec["config_hash"] and rec["dataset_version"] and rec["code"]["elevate_rag"]
+    assert rec["code"]["git_from_run"] is True  # captured in the manifest when the run started
+    assert rec["models"]["judge2"]["model"] == "judge-b"
+    assert "em" in rec["metrics"] and "correct_judge2" in rec["metrics"]
+    assert rec["judge_validation"]["status"] in ("validated", "unvalidated")
+    assert set(rec["judge_validation"]["calibration"]) == {"judge", "judge2"}
+    assert not rec["raw_run_dir"].startswith("/")  # no absolute paths in committed files
+    index = (results / "runs" / "INDEX.csv").read_text().splitlines()
+    assert len(index) == 4 and index[0].startswith("experiment,run_id")
+
+    for p in records:  # records can be rebuilt from the raw runs at any time
+        p.unlink()
+    res = runner.invoke(
+        app, ["results", "sync", "--runs-root", str(runs), "--results-dir", str(results)]
+    )
+    assert res.exit_code == 0 and "3 run record(s)" in res.output
+    assert len(list((results / "runs" / "C").glob("*.json"))) == 3
 
 
 def test_router_cli_and_benchmarks(workspace: tuple[CliRunner, Path, Path]) -> None:
@@ -183,18 +246,3 @@ def test_external_predictions_contract(workspace: tuple[CliRunner, Path, Path]) 
         ],
     )
     assert res.exit_code != 0
-
-
-def test_triple_agreement_cli(tmp_path: Path) -> None:
-    for name, labels in (
-        ("a", ["correct", "wrong", "partial"]),
-        ("b", ["correct", "wrong", "wrong"]),
-    ):
-        with (tmp_path / f"{name}.csv").open("w", newline="") as fh:
-            w = csv.DictWriter(fh, fieldnames=["triple_id", "label"])
-            w.writeheader()
-            w.writerows({"triple_id": f"t{i}", "label": lab} for i, lab in enumerate(labels))
-    res = CliRunner().invoke(
-        app, ["annotate", "triple-agreement", str(tmp_path / "a.csv"), str(tmp_path / "b.csv")]
-    )
-    assert res.exit_code == 0 and '"kappa"' in res.output

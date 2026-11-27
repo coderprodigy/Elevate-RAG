@@ -15,11 +15,9 @@ from elevate_rag.benchmarks.dbbench import (
 )
 from elevate_rag.config import VectorStoreConfig
 from elevate_rag.evaluation import llm_metrics
-from elevate_rag.evaluation.annotation import export_judge_sample
 from elevate_rag.reporting import report as R
 from elevate_rag.storage.graph import NetworkXStore
 from elevate_rag.storage.vector import ExactStore, make_vector_store
-from elevate_rag.types import Question
 from elevate_rag.utils import _JsonFormatter
 
 
@@ -154,10 +152,6 @@ def test_report_tables_and_all_figures(tmp_path: Path) -> None:
         R.fig_router_scatter(runs, "ds", out / "b.png"),
         R.fig_factor_importance(comps, out / "c.png"),
         R.fig_interaction(runs, out / "d.png"),
-        R.fig_failure_causes(
-            {"V4": {"retrieval_miss": 3, "generation_error": 2}, "local": {"extraction_miss": 4}},
-            out / "e.png",
-        ),
         R.fig_recall_qps(
             [
                 {
@@ -176,20 +170,6 @@ def test_report_tables_and_all_figures(tmp_path: Path) -> None:
     assert R.fig_recall_qps([], out / "x.png") is None
     R.write_markdown_report(tmp_path / "REPORT.md", table, comps, [p for p in paths if p])
     assert "Paired comparisons" in (tmp_path / "REPORT.md").read_text()
-
-
-def test_judge_sample_hides_verdicts(tmp_path: Path) -> None:
-    scored = [
-        {"question_id": f"q{i}", "mode": "v4", "answer": "a", "scores": {"judge": "correct"}}
-        for i in range(5)
-    ]
-    qs = {
-        f"q{i}": Question(question_id=f"q{i}", dataset="d", question="?", answers=["a"])
-        for i in range(5)
-    }
-    assert export_judge_sample(scored, qs, tmp_path / "j.csv", n=3) == 3
-    text = (tmp_path / "j.csv").read_text()
-    assert "correct" not in text.split("\n", 1)[1]  # annotators never see the judge verdict
 
 
 def test_json_log_formatter_redacts_secrets() -> None:

@@ -25,14 +25,16 @@ index_app = typer.Typer(no_args_is_help=True, help="Build, pilot and validate in
 router_app = typer.Typer(no_args_is_help=True, help="Train and evaluate routers.")
 exp_app = typer.Typer(no_args_is_help=True, help="Validate, estimate and run experiments.")
 bench_app = typer.Typer(no_args_is_help=True, help="Level-A database micro-benchmarks.")
-ann_app = typer.Typer(no_args_is_help=True, help="Human annotation exports and agreement.")
+judge_app = typer.Typer(no_args_is_help=True, help="Validate the LLM judges (GroUSE calibration).")
+results_app = typer.Typer(no_args_is_help=True, help="Traceable run records in the repository.")
 for name, sub in (
     ("data", data_app),
     ("index", index_app),
     ("router", router_app),
     ("experiment", exp_app),
     ("bench", bench_app),
-    ("annotate", ann_app),
+    ("judge", judge_app),
+    ("results", results_app),
 ):
     app.add_typer(sub, name=name)
 
@@ -308,12 +310,11 @@ def index_pilot(config: Path, set_: list[str] = typer.Option(None, "--set")) -> 
 def index_validate(
     config: Path,
     split: str = typer.Option("dev"),
-    audit_out: Path | None = typer.Option(None),
     set_: list[str] = typer.Option(None, "--set"),
 ) -> None:
-    """Graph quality checks (coverage ≥ 60 % gate G3) and optional triple-audit export."""
+    """Graph quality checks before any QA: answer-entity coverage (gate G3, >= 60 %) and shape."""
     from elevate_rag.data.prepare import DatasetStore
-    from elevate_rag.graph.quality import answer_entity_coverage, export_triple_audit, graph_shape
+    from elevate_rag.graph.quality import answer_entity_coverage, graph_shape
     from elevate_rag.pipeline import ElevateRAG
     from elevate_rag.utils import write_json
 
@@ -328,8 +329,6 @@ def index_validate(
             ds = DatasetStore.open(cfg.data_dir, cfg.dataset)
             cov = answer_entity_coverage(ds.questions(split), [n["id"] for n in nodes])
             shape = graph_shape(nodes, edges, s.store)
-            if audit_out:
-                export_triple_audit(edges, s.store, audit_out)
             out = {
                 "coverage": cov,
                 "shape": shape,
@@ -564,8 +563,20 @@ def exp_run(
     pipeline: Path | None = _PIPELINE_OPT,
     limit: int | None = _LIMIT_OPT,
     datasets: str | None = _DATASETS_OPT,
+    results_dir: Path = typer.Option(
+        Path("results"), envvar="ELEVATE_RESULTS_DIR", help="committed run records go here"
+    ),
+    record: bool = typer.Option(True, help="write the traceable run record (results/runs/)"),
+    mlflow: bool = typer.Option(False, envvar="ELEVATE_MLFLOW", help="also log runs to MLflow"),
+    mlflow_uri: str | None = typer.Option(None, help="default: sqlite:///<runs_root>/mlflow.db"),
+    ragas: bool | None = typer.Option(
+        None, help="score with the ragas package (default: the spec's `ragas` setting)"
+    ),
 ) -> None:
-    """Run (or dry-run) an experiment; completed runs are skipped, failed runs resumed."""
+    """Run (or dry-run) an experiment; completed runs are skipped, failed runs resumed.
+
+    Every completed run gets a committed record in <results_dir>/runs/<experiment>/ (git commit,
+    config hash, models, metrics with CIs, judge validation) and a line in INDEX.csv."""
     from elevate_rag.experiments.runner import (
         estimate,
         execute_run,
@@ -573,8 +584,11 @@ def exp_run(
         select_shard,
         validate,
     )
+    from elevate_rag.tracking import default_tracking_uri
 
     s, base = _spec(spec, pipeline, limit, datasets)
+    if ragas is not None:
+        s = s.model_copy(update={"ragas": ragas})
     runs = [r for r in expand(s, base) if not only or only in r.run_id]
     runs = select_shard(runs, shard)
     problems = validate(s, runs)
@@ -589,12 +603,23 @@ def exp_run(
         )
         if not yes and not typer.confirm("Proceed?"):
             raise typer.Exit(1)
+    uri = (mlflow_uri or default_tracking_uri(runs_root)) if mlflow else None
     failed = []
     for r in runs:
         try:
-            summ = asyncio.run(execute_run(r, s, runs_root))
-            acc = (summ.get("overall", {}).get("correct") or {}).get("mean")
-            typer.echo(f"✓ {r.run_id}: accuracy={acc}")
+            summ = asyncio.run(
+                execute_run(
+                    r,
+                    s,
+                    runs_root,
+                    results_dir=results_dir if record else None,
+                    mlflow_uri=uri,
+                )
+            )
+            ov = summ.get("overall", {})
+            em, f1, acc = ((ov.get(k) or {}).get("mean") for k in ("em", "f1", "correct"))
+            status = (summ.get("judge_validation") or {}).get("status", "no judge")
+            typer.echo(f"✓ {r.run_id}: em={em} f1={f1} judge_accuracy={acc} ({status})")
         except Exception as exc:  # recorded in the run manifest; continue with other runs
             failed.append(r.run_id)
             typer.echo(f"✗ {r.run_id}: {type(exc).__name__}: {exc}", err=True)
@@ -618,13 +643,14 @@ def exp_external(
     from elevate_rag.providers.base import UsageLedger
     from elevate_rag.providers.llm import make_llm
 
-    judge = None
+    judge = judge2 = None
     if config is not None:
         cfg = _cfg(config)
+        ledger = UsageLedger(max_usd=cfg.budget.max_usd)
         if cfg.models.judge is not None:
-            judge = make_llm(
-                cfg.models.judge, role="judge", ledger=UsageLedger(max_usd=cfg.budget.max_usd)
-            )
+            judge = make_llm(cfg.models.judge, role="judge", ledger=ledger)
+        if cfg.models.judge2 is not None:
+            judge2 = make_llm(cfg.models.judge2, role="judge2", ledger=ledger)
     _echo(
         asyncio.run(
             ingest_predictions(
@@ -635,6 +661,7 @@ def exp_external(
                 runs_root=runs_root,
                 split=split,
                 judge_llm=judge,
+                judge2_llm=judge2,
             )
         )["overall"]
     )
@@ -773,71 +800,95 @@ def bench_graph(
     _echo(results)
 
 
-# =============================================================================== annotate
+# =============================================================================== judge
 
 
-@ann_app.command("judge-sample")
-def ann_judge_sample(
-    run_dirs: list[Path],
-    out: Path,
+@judge_app.command("calibrate")
+def judge_calibrate(
+    config: Path,
+    set_: list[str] = typer.Option(None, "--set"),
+    results_dir: Path = typer.Option(Path("results"), envvar="ELEVATE_RESULTS_DIR"),
     data_dir: Path = typer.Option(Path("data"), envvar="ELEVATE_DATA_DIR"),
-    n: int = typer.Option(100),
+    grouse_file: Path | None = typer.Option(None, help="local GroUSE test.jsonl (offline)"),
+    concurrency: int = typer.Option(4),
 ) -> None:
-    """Export 100 random judged answers for two human annotators (labels left blank)."""
-    from elevate_rag.evaluation.annotation import export_judge_sample
+    """Score each configured judge on GroUSE (published, expert-written expected verdicts).
 
-    scored, qs = _scored_and_questions(run_dirs, data_dir)
-    typer.echo(f"wrote {export_judge_sample(scored, qs, out, n)} items to {out}")
+    Writes results/judge_calibration/<model@revision@judge-version>.json, which every later run
+    reads to decide whether its judge-based accuracies count as validated."""
+    from elevate_rag.evaluation.judge_calibration import (
+        calibrate,
+        download_grouse,
+        load_cases,
+        write_calibration,
+    )
+    from elevate_rag.providers.base import UsageLedger
+    from elevate_rag.providers.llm import make_llm
+
+    cfg = _cfg(config, set_)
+    roles = [(r, m) for r, m in (("judge", cfg.models.judge), ("judge2", cfg.models.judge2)) if m]
+    if not roles:
+        raise typer.BadParameter("the pipeline config defines no models.judge / models.judge2")
+    path = grouse_file or download_grouse(data_dir / "raw")
+    cases = load_cases(path)
+    out_dir = results_dir / "judge_calibration"
+
+    async def go() -> list[dict[str, Any]]:
+        ledger = UsageLedger(max_usd=cfg.budget.max_usd)
+        res = []
+        for role, m in roles:
+            llm = make_llm(m, role=role, ledger=ledger)
+            r = await calibrate(llm, cases, concurrency=concurrency)
+            written = write_calibration(out_dir, r)
+            res.append(
+                {
+                    "role": role,
+                    "model": r["model"],
+                    "n": r["n"],
+                    "pass_rate": r["pass_rate"],
+                    "calibrated": r["calibrated"],
+                    "written": str(written),
+                }
+            )
+        return res
+
+    _echo(asyncio.run(go()))
 
 
-@ann_app.command("judge-agreement")
-def ann_judge_agreement(
-    sample: Path,
-    annotator_a: Path,
-    annotator_b: Path,
-    run_dirs: list[Path],
-    data_dir: Path = typer.Option(Path("data"), envvar="ELEVATE_DATA_DIR"),
+# =============================================================================== results
+
+
+@results_app.command("sync")
+def results_sync(
+    runs_root: Path = typer.Option(Path("runs"), envvar="ELEVATE_RUNS_DIR"),
+    results_dir: Path = typer.Option(Path("results"), envvar="ELEVATE_RESULTS_DIR"),
+    experiment: str | None = typer.Option(None),
+    mlflow: bool = typer.Option(False, envvar="ELEVATE_MLFLOW", help="also log to MLflow"),
+    mlflow_uri: str | None = typer.Option(None, help="default: sqlite:///<runs_root>/mlflow.db"),
 ) -> None:
-    """Cohen's kappa: annotator vs annotator and judge vs human consensus (gate ≥ 0.6)."""
-    from elevate_rag.evaluation.annotation import judge_agreement
+    """(Re)write the committed record of every completed run, e.g. after copying runs back
+    from a cluster or EC2, re-checking judge validation against the calibration files present
+    now. Records and INDEX.csv go to <results_dir>/runs/."""
+    from elevate_rag.evaluation.judge_calibration import revalidate
+    from elevate_rag.reporting.report import load_runs
+    from elevate_rag.tracking import default_tracking_uri, rebuild_index, record_run
+    from elevate_rag.utils import write_json
 
-    scored, _ = _scored_and_questions(run_dirs, data_dir)
-    _echo(judge_agreement(sample, annotator_a, annotator_b, scored))
-
-
-@ann_app.command("triple-agreement")
-def ann_triple(annotator_a: Path, annotator_b: Path) -> None:
-    from elevate_rag.evaluation.annotation import triple_audit_agreement
-
-    _echo(triple_audit_agreement(annotator_a, annotator_b))
-
-
-@ann_app.command("failures")
-def ann_failures(
-    run_dir: Path,
-    out: Path,
-    data_dir: Path = typer.Option(Path("data"), envvar="ELEVATE_DATA_DIR"),
-    n: int = typer.Option(50),
-) -> None:
-    """Export 50 failures with a *suggested* cause for manual tagging."""
-    from elevate_rag.evaluation.annotation import export_failure_sample
-
-    scored, qs = _scored_and_questions([run_dir], data_dir)
-    typer.echo(f"wrote {export_failure_sample(scored, qs, out, n)} failures to {out}")
-
-
-def _scored_and_questions(run_dirs: list[Path], data_dir: Path) -> tuple[list[Any], dict[str, Any]]:
-    from elevate_rag.data.prepare import DatasetStore
-
-    scored, qs = [], {}
-    for d in run_dirs:
-        man = json.loads((d / "manifest.json").read_text())["definition"]
-        rows = [json.loads(x) for x in (d / "scored.jsonl").read_text().splitlines()]
-        scored += rows
-        qs.update(
-            {q.question_id: q for q in DatasetStore.open(data_dir, man["dataset"]).questions()}
-        )
-    return scored, qs
+    uri = (mlflow_uri or default_tracking_uri(runs_root)) if mlflow else None
+    written = 0
+    for r in load_runs(runs_root, experiment):
+        if r["manifest"].get("demo"):
+            continue
+        summary = r["summary"]
+        config = r["manifest"]["definition"].get("config", {})
+        jv = revalidate(summary, config, results_dir / "judge_calibration")
+        if jv is not None and jv != summary.get("judge_validation"):
+            summary["judge_validation"] = jv
+            write_json(r["dir"] / "summary.json", summary)
+        record_run(r["manifest"], summary, r["dir"], results_dir, mlflow_uri=uri)
+        written += 1
+    index = rebuild_index(results_dir)
+    typer.echo(f"{written} run record(s) written; index: {index}")
 
 
 # =============================================================================== report
@@ -871,9 +922,10 @@ def report(
             p = fn(runs, ds, out / f"{stem}_{ds}.png")
             if p:
                 figs.append(p)
-    if comps and (
+    em_comps = [c for c in comps if c["metric"] == "em"]
+    if em_comps and (
         p := R.fig_factor_importance(
-            comps, out / "factor_importance.png", any(t["demo"] for t in table)
+            em_comps, out / "factor_importance.png", any(t["demo"] for t in table)
         )
     ):
         figs.append(p)

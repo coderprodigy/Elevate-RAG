@@ -51,7 +51,7 @@ Priority: **M** = must (plan or spec says so explicitly), **S** = should, **C** 
 | FR-G6 | Retrieval modes naive / local / global / hybrid / mix; 1-hop vs 2-hop ablation | M |
 | FR-G7 | Optional community layer (clustering + LLM report) as ablation only | S |
 | FR-G8 | Graph quality checks before QA: answer-entity coverage, node/edge count, avg degree, clustering coeff., duplicate rate, build time, tokens, storage | M |
-| FR-G9 | 50-triple manual audit export, two annotators, Cohen's kappa | M |
+| FR-G9 | 50-triple manual audit export, two annotators, Cohen's kappa — *removed by owner decision D-36* | M |
 | FR-G10 | Context-token budget for graph modes from day one | M |
 | FR-G11 | Fallback: coverage < 60 % after tuning → rebuild with LlamaIndex `SchemaLLMPathExtractor` | S |
 
@@ -106,9 +106,9 @@ Priority: **M** = must (plan or spec says so explicitly), **S** = should, **C** 
 | FR-E6 | Refusal accuracy on unanswerable questions | M |
 | FR-E7 | Pairwise comprehensiveness / diversity / empowerment, both orders, win only if both agree | M |
 | FR-E8 | Efficiency: build time/tokens, storage, latency p50/p95, tokens per query, $/1k queries | M |
-| FR-E9 | Judge validation: 100 human labels × 2 annotators, kappa ≥ 0.6 gate | M |
+| FR-E9 | Judge validation: 100 human labels × 2 annotators, kappa ≥ 0.6 gate — *replaced by GroUSE calibration + two-judge kappa ≥ 0.6 (D-36)* | M |
 | FR-E10 | Bootstrap 95 % CI (1,000 resamples), paired bootstrap, McNemar, Holm–Bonferroni, effect sizes, MDE/power check | M |
-| FR-E11 | Error analysis: 50 failures per system, six cause categories, failure-cause chart | M |
+| FR-E11 | Error analysis: 50 failures per system, six cause categories, failure-cause chart — *removed by owner decision D-36* | M |
 | FR-E12 | Failed queries counted explicitly, never silently dropped; unsupported metrics reported as missing, not zero | M |
 
 ### Experiments (plan §Experiment matrix; spec §14)

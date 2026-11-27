@@ -34,6 +34,10 @@ Every long step is resumable: re-running the same command skips finished graph d
 completed runs. Nothing spends money unless a config declares a non-zero price **and**
 `budget.max_usd` allows it.
 
+Every completed run writes a small, committable record to `results/runs/<experiment>/<run_id>.json`
+and a line in `results/runs/INDEX.csv` (section 6), so every number can be traced to its code
+commit, config, data version and models.
+
 ## Reproducing the committed results
 
 | Result | What it is | Command | Time / hardware |
@@ -41,11 +45,14 @@ completed runs. Nothing spends money unless a config declares a non-zero price *
 | `results/model_free/` | BM25 retrieval and router accuracy on real data (no LLM) | `uv run python scripts/model_free_measurements.py` | minutes, CPU only |
 | `results/g1/` | Gate G1, Qwen2.5-3B + Llama-3.2-3B, 20 questions | section 2, `local_free.yaml` | ~2 h, 16 GB Apple-silicon laptop |
 | `results/g1_7b/` | Gate G1, Qwen2.5-7B + Llama-3.1-8B, same 20 questions | section 2, `local_7b.yaml` | ~4.3 h, same laptop (graph 3.2 h) |
+| `results/judge_calibration/` | GroUSE calibration of each judge model | `uv run elevate-rag judge calibrate configs/pipelines/local_7b.yaml` | ~5 min per 8B judge on a laptop |
+| `results/runs/` | one record per completed run + `INDEX.csv` | written by every `experiment run`; rebuild with `uv run elevate-rag results sync` | seconds |
 | `demo_output/` (not committed) | offline pipeline demo, every number labelled DEMO | `uv run elevate-rag demo` | ~20 s |
 
 Expected differences on re-runs: local model servers are seeded (`seed: 0`) but GPU kernels are
 not bit-identical across hardware, so a few answers can change; the statistics in each report
-(bootstrap CIs, McNemar) show how much that matters. The `results/g1` run predates two config
+(bootstrap CIs, McNemar) show how much that matters. `local_7b.yaml` now defines a second judge,
+so re-running G1-7B with it creates new run ids (the predictions come from the response cache). The `results/g1` run predates two config
 fixes (Anthropic's `effort` field was inherited and sent to Ollama, which ignores it; operational
 fields were part of run ids), so a re-run gets new run ids but the same model inputs.
 
@@ -63,12 +70,13 @@ Checks the whole pipeline (LightRAG included) with stand-in models. Not research
 Needs ~8 GB RAM for the 3B pair, 16 GB for the 7B/8B pair, and 5–12 GB disk for weights.
 
 ```bash
-uv sync --locked --extra faiss --extra local-models
+uv sync --locked --extra faiss --extra local-models --extra ragas --extra tracking
 uv run python scripts/download_models.py configs/pipelines/local_7b.yaml   # embedder, reranker
 
 # Ollama: the context window MUST be >= 8192 (the default 4096 silently truncates prompts)
 OLLAMA_CONTEXT_LENGTH=8192 ollama serve &          # macOS/Homebrew: brew services stop ollama first
-ollama pull qwen2.5:7b-instruct && ollama pull llama3.1:8b     # or qwen2.5:3b-instruct + llama3.2:3b
+ollama pull qwen2.5:7b-instruct && ollama pull llama3.1:8b && ollama pull granite3.3:8b
+# (granite3.3:8b is the second judge; 3B pair: qwen2.5:3b-instruct + llama3.2:3b, one judge)
 
 # Gate G1 end to end (index + graph → G3 checks → 6 variants → report), in-process storage
 scripts/run_pipeline.sh configs/pipelines/local_7b.yaml \
@@ -99,7 +107,10 @@ CUDA_VISIBLE_DEVICES=0,1 .venv-vllm/bin/vllm serve Qwen/Qwen3.6-35B-A3B \
   --max-model-len 32768 --seed 0 --reasoning-parser qwen3 --language-model-only &
 CUDA_VISIBLE_DEVICES=2 .venv-vllm/bin/vllm serve microsoft/phi-4 \
   --revision 2db69c1c3e91a05d2c64a3185acfbaf36f744e25 --port 8001 --max-model-len 16384 --seed 0 &
-export ELEVATE_GEN_URL=http://127.0.0.1:8000/v1 ELEVATE_JUDGE_URL=http://127.0.0.1:8001/v1
+CUDA_VISIBLE_DEVICES=3 .venv-vllm/bin/vllm serve ibm-granite/granite-3.3-8b-instruct \
+  --revision 51dd4bc2ade4059a6bd87649d68aa11e4fb2529b --port 8002 --max-model-len 16384 --seed 0 &
+export ELEVATE_GEN_URL=http://127.0.0.1:8000/v1 ELEVATE_JUDGE_URL=http://127.0.0.1:8001/v1 \
+       ELEVATE_JUDGE2_URL=http://127.0.0.1:8002/v1
 
 scripts/run_pipeline.sh configs/pipelines/cluster_gpu.yaml \
   configs/experiments/S0_cluster_smoke.yaml hotpotqa_g1 results/s0
@@ -115,7 +126,8 @@ Then any experiment: `uv run elevate-rag experiment run configs/experiments/E2_r
 |---|---|---|---|
 | generator/extractor (default) | Qwen/Qwen3.6-35B-A3B | 71.9 GB | 2×80 GB (TP 2) or 4×48 GB (TP 4) |
 | generator/extractor (small) | Qwen/Qwen2.5-7B-Instruct (`cluster_gpu_7b.yaml`) | 15.2 GB | 1×24 GB+ |
-| judge | microsoft/phi-4 | 29.3 GB | 1×40 GB+ |
+| judge | microsoft/phi-4 | 29.3 GB | 1×40 GB+ (or 2×24 GB, TP 2) |
+| second judge | ibm-granite/granite-3.3-8b-instruct | 16.3 GB | 1×24 GB+ |
 | embedder / reranker | Qwen3-Embedding-0.6B / bge-reranker-v2-m3 | 1.2 / 2.3 GB | any GPU, or CPU |
 
 KV cache needs room on top of the weights; `--max-model-len 32768` for the generator is plenty
@@ -130,9 +142,9 @@ Everything lives in `infrastructure/cluster/`:
 |---|---|
 | `env.sh` | **the only file to edit**: paths (scratch), partitions, account, models, GPUs |
 | `submit.sh` | entry point: `prepare`, `smoke`, `index`, `experiment`, `status` |
-| `gpu_job.sbatch` | GPU job: starts vLLM (generator + judge), then index build or one experiment shard |
-| `cpu_job.sbatch` | report job |
-| `serve_models.sh` | splits the job's GPUs, starts both vLLM servers, waits, stops them at exit |
+| `gpu_job.sbatch` | GPU job: starts vLLM (generator + two judges), then index build + judge calibration, or one experiment shard |
+| `cpu_job.sbatch` | report job: `results sync` (run records, judge validation) then the report |
+| `serve_models.sh` | splits the job's GPUs, starts the three vLLM servers (`JUDGE2_TP=0`: two), waits, stops them at exit |
 | `elevate-rag.def` | Apptainer image (if your cluster has no uv/Python 3.12) |
 
 ### One-time setup (login node, needs internet)
@@ -146,7 +158,7 @@ uv sync --locked --extra faiss --extra local-models
 # Option B: Apptainer image (then: export ELEVATE_SIF=$ELEVATE_ROOT/elevate-rag.sif in env.sh)
 apptainer build --fakeroot "$ELEVATE_ROOT/elevate-rag.sif" infrastructure/cluster/elevate-rag.def
 
-infrastructure/cluster/submit.sh prepare    # datasets, model weights (~105 GB), vLLM image
+infrastructure/cluster/submit.sh prepare    # datasets, model weights (~120 GB), vLLM image
 ```
 
 Compute nodes then run fully offline (`HF_HUB_OFFLINE=1`, `uv run --offline`).
@@ -173,7 +185,9 @@ Operational notes:
 * Each shard gets its own SQLite cache directory (SQLite locking is unreliable across nodes).
 * Queries never write to the index, so shards share one index safely.
 * Logs: `$ELEVATE_ROOT/runs/logs/` (job output, vLLM logs, per-step logs).
-* Copy results back: `rsync -av cluster:$ELEVATE_ROOT/results/ results/cluster/`.
+* Copy results back: `rsync -av cluster:$ELEVATE_ROOT/results/runs/ results/runs/` (records;
+  commit them) and `rsync -av cluster:$ELEVATE_ROOT/results/judge_calibration/ results/judge_calibration/`.
+  Reports are in `$ELEVATE_ROOT/results/<EXP>/`.
 
 **Status:** the cluster scripts were checked for syntax, dry-run submission (`DRY_RUN=1`) and the
 vLLM start/wait/stop logic with a stub server; they have **not yet run on a real SLURM cluster
@@ -192,18 +206,54 @@ uv run elevate-rag experiment estimate configs/experiments/E2_retrieval_modes.ya
 
 The ledger checks the cap before every paid call and aborts the run when it would be exceeded.
 
-## 6. Human validation (all setups)
+## 6. Evaluation, judge validation and run records (all setups)
+
+**Metrics.** The primary answer metrics are the benchmarks' official, judge-free ones: exact
+match and token F1 (SQuAD normalisation), refusal accuracy on unanswerable questions, plus
+retrieval recall@k / nDCG@10. Two LLM judges from different model families (`models.judge`,
+`models.judge2`) grade every answer correct / partial / wrong. With `ragas: true` in the spec
+(or `--ragas`), the [RAGAS](https://docs.ragas.io) package adds faithfulness, context precision,
+context recall and answer correctness, scored by the judge server (self-hosted, $0 only).
+
+**Judge validation (automatic, no annotators; D-36).** A run's judge accuracy counts as
+`validated` only when
+
+1. both judges pass calibration on [GroUSE](https://arxiv.org/abs/2409.06595), a published
+   benchmark of expert-written expected verdicts (≥ 80 % of its 63 applicable cases), and
+2. the two judges agree on this run's answers with Cohen's κ ≥ 0.6.
 
 ```bash
-uv run elevate-rag annotate judge-sample runs/<EXP>/<run_dir> results/annotation/judge_sample.csv
-# two people fill in the label columns independently, then:
-uv run elevate-rag annotate judge-agreement results/annotation/judge_sample.csv a.csv b.csv runs/<EXP>/<run_dir>
-# triples: each annotator fills the `label` column of a copy of triple_audit_sample.csv
-uv run elevate-rag annotate triple-agreement triples_a.csv triples_b.csv
-uv run elevate-rag annotate failures runs/<EXP>/<run_dir> results/annotation/failures.csv
+uv run elevate-rag judge calibrate PIPELINE.yaml     # once per judge model; writes results/judge_calibration/
 ```
 
-No judge-based number should be reported until judge-vs-human κ ≥ 0.6.
+`run_pipeline.sh` and the cluster index job run it automatically. Otherwise reports and records
+mark judge accuracy `unvalidated` with the reasons, and EM/F1 stay the numbers to cite.
+
+**Run records (traceability).** Every completed run writes
+`results/runs/<experiment>/<run_id>.json` and updates `results/runs/INDEX.csv`:
+
+| Field | Traces |
+|---|---|
+| `config_hash`, `index_key`, `variant`, `split`, `limit` | the exact experimental configuration (re-run it with the same spec + pipeline) |
+| `dataset`, `dataset_version` | the prepared data (checksummed manifest) |
+| `models.<role>` | every model id with its pinned revision |
+| `code.git_commit`, `git_branch`, `git_dirty`, `git_from_run` | the code that produced the run (captured when the run started) |
+| `metrics.*` | headline metrics, each with mean, 95 % bootstrap CI and n |
+| `judge_agreement`, `judge_validation` | κ between the judges, calibration results, status and reasons |
+| `efficiency`, `cost_usd`, `raw_run_dir` | latency, tokens, cost; where the raw predictions are (relative to `ELEVATE_RUNS_DIR`) |
+
+Commit `results/runs/` and `results/judge_calibration/` after each block; raw predictions stay in
+`runs/` (git-ignored). Records hold no host names or absolute paths. If `git_dirty` is true the
+run used uncommitted code: commit first for fully traceable results.
+
+```bash
+uv run elevate-rag results sync                      # rebuild records from runs/ (e.g. after rsync from EC2 / the cluster)
+uv run elevate-rag experiment run SPEC --mlflow      # also log to MLflow (extra `tracking`)
+uv run mlflow ui --backend-store-uri sqlite:///runs/mlflow.db   # browse runs, compare metrics
+```
+
+`--results-dir` / `ELEVATE_RESULTS_DIR` moves the records (default `results/`); `--no-record`
+disables them.
 
 ## Troubleshooting
 
@@ -217,3 +267,5 @@ No judge-based number should be reported until judge-vs-human κ ≥ 0.6.
 | `graph requested but not built` | experiment before index build | build the index with the same pipeline and storage overrides |
 | a variant shows latency `n/a` | its LLM calls were served from cache | run it against an empty `ELEVATE_CACHE_DIR` to measure latency |
 | `environment variable … is not set` | config needs `ELEVATE_GEN_URL` etc. | start the model servers / export the URL |
+| `judge_status: unvalidated` in a report | a judge is uncalibrated, failed GroUSE, or κ < 0.6 | read `judge_validation.reasons` in the run record; run `judge calibrate`; cite EM/F1 |
+| `No module named 'ragas'` / `'mlflow'` | optional extras missing | `uv sync --locked --extra ragas --extra tracking` (plus your other extras) |

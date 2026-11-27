@@ -74,6 +74,9 @@ class ModelsConfig(_Strict):
     generator: ProviderConfig
     router_llm: ProviderConfig | None = None
     judge: ProviderConfig | None = None
+    # Second, independent judge from a third model family. Both judges score every answer; their
+    # agreement (Cohen's kappa) is the automated check on the judge (D-36).
+    judge2: ProviderConfig | None = None
 
 
 class VectorStoreConfig(_Strict):
@@ -212,6 +215,8 @@ class PipelineConfig(_Strict):
                     role.pop(k, None)
         for k in OPERATIONAL_LIGHTRAG_FIELDS:
             data["lightrag"].pop(k, None)
+        if data["models"].get("judge2") is None:  # keeps run ids from before judge2 existed
+            data["models"].pop("judge2", None)
         return stable_hash(data)
 
     def index_key(self) -> str:

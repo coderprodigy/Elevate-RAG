@@ -59,9 +59,11 @@ the 3B write-up suspected.
 
 ## Findings
 
-1. **An 8B judge is far more consistent with a judge-free check than a 3B judge**, but it still
-   has to pass the human agreement gate (κ ≥ 0.6) before its numbers count. The sample for the
-   two annotators is exported: `judge_sample.csv` (100 items, verdicts hidden).
+1. **An 8B judge is far more consistent with a judge-free check than a 3B judge**, but it is not
+   validated: on GroUSE it passes 49 of 63 cases (0.78, below the 0.8 bar). It rated all 9
+   partially complete answers `correct`, so it is too lenient
+   (`../judge_calibration/`). This run also had no second judge, so judge agreement could not
+   be measured (D-36). Cite EM/F1 from this run, not judge accuracy.
 2. **Qwen2.5-7B writes 54 % of entity names without spaces** ("HansenClarke", "DemocraticParty",
    "OneWorldTradeCenter"; 951 of 1,746). Two consequences, both fixed in code during this run and
    regression-tested:
@@ -85,7 +87,6 @@ the 3B write-up suspected.
 
 * `report/`: tables, paired tests and figures from `elevate-rag report`.
 * `graph_validation.json`: G3 coverage and graph shape (re-validated after the matcher fix).
-* `triple_audit_sample.csv`: 100 triples with evidence for the human triple audit
-  (**not yet annotated**).
-* `judge_sample.csv`: 100 judged answers for the human judge check (**not yet annotated**).
+* Run records: `../runs/G1-7B/` (one JSON per variant: config hash, models, metrics with CIs,
+  judge status `unvalidated` with reasons).
 * Raw predictions: `runs/G1-7B/` (git-ignored; reproducible from the commands above).

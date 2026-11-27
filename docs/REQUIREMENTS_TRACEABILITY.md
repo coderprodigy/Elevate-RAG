@@ -5,7 +5,7 @@ Status legend (spec §24):
 credentials / hardware) · **PI** partially implemented · **BL** blocked (external) · **NI** not implemented.
 
 Code paths are relative to `src/elevate_rag/`. Tests: `tests/…`. Evidence for IV rows = the tests
-named (all passing: `134 passed, 4 skipped`) and/or the real-data artefact named.
+named (all passing: `140 passed`, live-DB tests deselected while Docker is down) and/or the real-data artefact named.
 
 ## Research questions
 
@@ -43,7 +43,7 @@ named (all passing: `134 passed, 4 skipped`) and/or the real-data artefact named
 | FR-G6 modes + 1/2-hop | `lightrag_engine.retrieve`, `_expand_two_hop` | `test_every_mode_…`, `test_two_hop_expansion_…` | IV |
 | FR-G7 community ablation | `graph/community.py` (Leiden + reports) | `test_community_layer_ablation` | IV |
 | FR-G8 quality checks | `graph/quality.py`, `index validate` | `test_answer_entity_coverage_rules`, `test_graph_shape_…`, CLI smoke | IV (tooling) · gate G3 BL (X1) |
-| FR-G9 50-triple audit + kappa | `quality.export_triple_audit`, `annotation.triple_audit_agreement` | `test_triple_audit_export_…`, `test_triple_agreement_cli` | IV (tooling) · labels BL (X5) |
+| FR-G9 50-triple audit + kappa | **removed by owner decision D-36** (no annotators); graph quality is checked automatically by FR-G8 (G3 coverage, shape, duplicate rate) | – | NI (deviation, D-36) |
 | FR-G10 graph context budget | `generation/context.py` | `test_kg_share_…` | IV |
 | FR-G11 LlamaIndex fallback | – | – | NI (KNOWN_ISSUES P1) |
 | FR-R0 static | `Router` level static | `test_router_levels_…` | IV |
@@ -71,16 +71,16 @@ named (all passing: `134 passed, 4 skipped`) and/or the real-data artefact named
 | FR-C4 untrusted context | system prompt + delimiters | `test_prompt_marks_passages_untrusted…` | IV |
 | FR-C5 evidence recorded | `QueryRecord.context_item_ids/context_items` | e2e tests | IV |
 | FR-E1 recall@k, nDCG@10 | `evaluation/metrics.py` | metric tests; real BM25 results | IV |
-| FR-E2 context recall/precision, faithfulness | `evaluation/llm_metrics.py` (RAGAS definitions) | `test_llm_metrics_follow_ragas_definitions` | IV (logic) · real judge IN · `ragas` package PI (P2) |
+| FR-E2 context recall/precision, faithfulness | `evaluation/ragas_metrics.py` (`ragas` 0.4.3 package, spec `ragas: true`); `evaluation/llm_metrics.py` (native, for paid judges) | `test_ragas_scores_answerable_rows_…`, `test_llm_metrics_follow_ragas_definitions`; live run with Llama-3.1-8B via Ollama (3 G1 questions) | IV |
 | FR-E3 evidence recall / context relevance | string evidence recall (valid only when evidence is verbatim) | `test_evidence_recall_…`, `test_paraphrased_evidence_…` | PI (P3) |
 | FR-E4 EM / F1 | metrics | tests | IV |
-| FR-E5 judge correctness | `evaluation/judge.py` | `test_correctness_judge` | IV (logic) · real judge BL (X2) |
+| FR-E5 judge correctness | `evaluation/judge.py`; second judge `models.judge2`, agreement `harness.judge_agreement` | `test_correctness_judge`, `test_judge_agreement_ignores_rule_verdicts_…`, `test_runs_write_traceable_records_with_two_judges` | IV |
 | FR-E6 refusal accuracy | `refusal_correct`, unanswerable rule | judge + e2e tests | IV |
 | FR-E7 pairwise, both orders | `PairwiseJudge`, `evaluation/pairwise.py`, `experiment pairwise` | `test_pairwise_judge_…`, `test_compare_runs_…` | IV (logic) |
 | FR-E8 efficiency metrics | `summarize.efficiency`, index manifest | `test_summarize_…` | IV |
-| FR-E9 judge validation kappa ≥ 0.6 | `annotation.export_judge_sample`, `judge_agreement` | `test_judge_sample_hides_verdicts`, `test_judge_agreement_…` | IV (tooling) · labels BL (X5) |
+| FR-E9 judge validation kappa ≥ 0.6 | **replaced (D-36)**: GroUSE calibration (`evaluation/judge_calibration.py`, `judge calibrate`) + inter-judge κ ≥ 0.6 → `judge_validation` status per run | `test_grouse_conditions_map_…`, `test_calibrate_…`, `test_judge_validation_requires_…`, `test_revalidate_…`; real calibration of Llama-3.1-8B (`results/judge_calibration/`) | IV (deviation from human labels, D-36) |
 | FR-E10 statistics | `stats.py`, `reporting.paired_comparisons` | `unit/test_metrics_stats.py` | IV |
-| FR-E11 error analysis | `annotation.export_failure_sample`, `fig_failure_causes` | tests + CLI | IV (tooling) · labels BL (X5) |
+| FR-E11 error analysis | **removed by owner decision D-36** (manual cause labelling) | – | NI (deviation, D-36) |
 | FR-E12 failures counted, undefined ≠ 0 | `score_rows`, `summarize` (`__undefined`, `error_rate`, cost None) | `test_summarize_counts_failures_and_undefined` | IV |
 | FR-X1 runner E1–E6, A1–A4 | `experiments/runner.py`, `configs/experiments/` | e2e experiment + CLI tests; all specs expand & validate | IV |
 | FR-X2 one factor at a time; extractor datasets | variants; `validate` | `test_validate_enforces_protocol_rules` | IV |
@@ -98,7 +98,7 @@ named (all passing: `134 passed, 4 skipped`) and/or the real-data artefact named
 
 | ID | Evidence | Status |
 |---|---|---|
-| NFR-1 reproducibility | `uv.lock`, `exclude-newer`, pinned dataset/model revisions, config hashes, caches | IV |
+| NFR-1 reproducibility | `uv.lock`, `exclude-newer`, pinned dataset/model revisions, config hashes, caches; committed run records with git commit (`tracking.py`, `results/runs/`), optional MLflow | IV |
 | NFR-2 fairness | shared path in `ElevateRAG.answer`; validation rules | IV |
 | NFR-3 cost safety | cap checked before calls; `$0` default; `BudgetExceededError` aborts | IV |
 | NFR-4 reliability | retries/backoff/timeouts (`retry_async`), bounded semaphores, resumable indexing/runs, crash-safe JSONL | IV |

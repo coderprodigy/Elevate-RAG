@@ -52,7 +52,7 @@ Workspace `Elevate-RAG-nova`, branch `nova`. **Nothing committed or pushed** (us
 | E4 (DBs) | exact / FAISS / NetworkX benchmarked on synthetic data | server DBs not run (X4) |
 | E5 / E6 | ready (specs validate) | not run (X1–X3, X6) |
 | A1–A4 | ready | not run (X1–X3) |
-| Human gates (G3 audit, judge kappa, failures) | export and agreement tooling ready | need two annotators (X5) |
+| Judge validation (D-36, replaces the human gates) | GroUSE calibration + two-judge κ, run records | Llama-3.1-8B calibrated: 0.78 (below 0.8); no run validated yet |
 
 ## Session 2 (2026-11-26, after owner decisions D-27)
 
@@ -132,3 +132,30 @@ Workspace `Elevate-RAG-nova`, branch `nova`. **Nothing committed or pushed** (us
   `infrastructure/cluster/env.sh`, used by `serve_models.sh` (stub-tested) and RUNNING.md.
 * Every experiment spec validates against `cluster_gpu_7b.yaml`; E5/E6 Claude variants are
   refused at budget $0, as intended.
+
+## Session 7 (2026-11-27): automated evaluation and traceable results (owner decision D-36)
+
+* **Human annotation removed** (owner decision): `elevate-rag annotate …`, the triple-audit
+  export, the failure-cause chart and the exported CSVs in `results/g1*/` are deleted.
+* **Replacement, all $0 and local:**
+  * the benchmarks' official EM / F1 are the primary metrics; paired tests run on EM and on the
+    judge verdict;
+  * a second judge (`models.judge2`, Granite-3.3-8B: third model family) and per-run Cohen's κ;
+  * judge calibration on GroUSE (`elevate-rag judge calibrate`; MIT, pinned + SHA-256);
+  * a `validated` / `unvalidated` status per run with reasons;
+  * the `ragas` package (0.4.3) for faithfulness / context precision / context recall / answer
+    correctness (`ragas: true` or `--ragas`);
+  * a committed record per run (`results/runs/…json` + `INDEX.csv`: git commit captured at run
+    start, config hash, data version, models, metrics with CIs) and optional MLflow logging
+    (`--mlflow`); `elevate-rag results sync` rebuilds records and re-checks validation.
+* **Verified live (Ollama, laptop):** Llama-3.1-8B calibrated on all 63 applicable GroUSE cases:
+  0.78, too lenient on incomplete answers (9/9 rated `correct`). RAGAS + record + MLflow on 3
+  G1 questions through the real pipeline: answers and EM identical to the original G1-7B run.
+  Records written for the 12 committed G1 runs (`results/runs/`).
+* **Cluster / EC2:** a third vLLM server for the second judge (`serve_models.sh`,
+  `JUDGE2_*` in `env.sh`; stub-tested); the index job calibrates the judges; the report job runs
+  `results sync`. `INDEX.csv` is written atomically (parallel shards).
+* **Dependency fix:** `ragas` 0.4.3 fails to import with `langchain-community` 0.4 → pinned
+  `<0.4` in the `ragas` extra.
+* Checks: ruff + format clean, mypy clean (55 files), **140 passed** (live-DB tests deselected
+  while Docker is broken).

@@ -6,10 +6,7 @@ audited triple sample with two annotators.
 
 from __future__ import annotations
 
-import csv
-import random
 from collections import Counter
-from pathlib import Path
 from typing import Any
 
 import networkx as nx
@@ -102,59 +99,4 @@ def graph_shape(
     if store is not None and len(store):
         covered = {c for x in nodes for c in x.get("chunk_ids", [])}
         out["chunks_with_entities"] = len(covered) / len(store)
-    return out
-
-
-AUDIT_FIELDS = [
-    "triple_id",
-    "source",
-    "relation",
-    "target",
-    "description",
-    "evidence_chunk_id",
-    "evidence_text",
-    "label",
-]
-AUDIT_LABELS = ("correct", "partial", "wrong")
-
-
-def export_triple_audit(
-    edges: list[dict[str, Any]], store: ChunkStore, path: Path, n: int = 50, seed: int = 13
-) -> int:
-    """Write a CSV of `n` random triples with their evidence chunk; `label` left blank."""
-    pool = sorted(edges, key=lambda e: (e["source"], e["target"]))
-    sample = random.Random(seed).sample(pool, min(n, len(pool)))
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=AUDIT_FIELDS)
-        w.writeheader()
-        for i, e in enumerate(sample):
-            cid = (e.get("chunk_ids") or [""])[0]
-            w.writerow(
-                {
-                    "triple_id": f"t{i:03d}",
-                    "source": e["source"],
-                    "target": e["target"],
-                    "relation": e.get("keywords", ""),
-                    "description": e.get("description", ""),
-                    "evidence_chunk_id": cid,
-                    "evidence_text": store[cid].text[:1500] if cid in store else "",
-                    "label": "",
-                }
-            )
-    return len(sample)
-
-
-def read_labels(path: Path, id_field: str, allowed: tuple[str, ...]) -> dict[str, str]:
-    """Read a completed annotation CSV; rejects unknown or missing labels."""
-    out = {}
-    with path.open(encoding="utf-8") as fh:
-        for row in csv.DictReader(fh):
-            label = (row.get("label") or "").strip().lower()
-            if label not in allowed:
-                raise ValueError(
-                    f"{path}: row {row[id_field]} has invalid/missing label "
-                    f"{label!r}; allowed {allowed}"
-                )
-            out[row[id_field]] = label
     return out

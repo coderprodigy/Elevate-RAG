@@ -1,0 +1,13 @@
+experiment,run_id,dataset,variant,split,n,em,f1,accuracy_judge,accuracy_judge2,judge_kappa,judge_status,recall@10,ragas_faithfulness,cost_usd,git_commit,git_dirty,config_hash,completed_at,record
+G1,G1-R1-rules-hotpotqa_g1-14f096de,hotpotqa_g1,R1-rules,all,20,0.05,0.11530952380952379,0.45,,,unvalidated,0.95,,0.0,6179ad2c279d,True,1450e3cc6f0096d4,2026-11-27T07:25:14+00:00,G1/G1-R1-rules-hotpotqa_g1-14f096de.json
+G1,G1-V4-hotpotqa_g1-7db83dda,hotpotqa_g1,V4,all,20,0.15,0.20574229691876753,0.45,,,unvalidated,1.0,,0.0,6179ad2c279d,True,a977f5ad113d72eb,2026-11-27T06:54:18+00:00,G1/G1-V4-hotpotqa_g1-7db83dda.json
+G1,G1-hybrid-hotpotqa_g1-ed19aecc,hotpotqa_g1,hybrid,all,20,0.05,0.09941666666666667,0.5,,,unvalidated,0.925,,0.0,6179ad2c279d,True,a977f5ad113d72eb,2026-11-27T07:17:03+00:00,G1/G1-hybrid-hotpotqa_g1-ed19aecc.json
+G1,G1-local-hotpotqa_g1-3102ec24,hotpotqa_g1,local,all,20,0.05,0.09775,0.45,,,unvalidated,0.9,,0.0,6179ad2c279d,True,a977f5ad113d72eb,2026-11-27T07:06:16+00:00,G1/G1-local-hotpotqa_g1-3102ec24.json
+G1,G1-mix-hotpotqa_g1-cdc96e6b,hotpotqa_g1,mix,all,20,0.05,0.13691666666666666,0.7,,,unvalidated,1.0,,0.0,6179ad2c279d,True,a977f5ad113d72eb,2026-11-27T07:24:25+00:00,G1/G1-mix-hotpotqa_g1-cdc96e6b.json
+G1,G1-naive-hotpotqa_g1-99f43bc3,hotpotqa_g1,naive,all,20,0.15,0.18949579831932775,0.5,,,unvalidated,1.0,,0.0,6179ad2c279d,True,a977f5ad113d72eb,2026-11-27T06:55:58+00:00,G1/G1-naive-hotpotqa_g1-99f43bc3.json
+G1-7B,G1-7B-R1-rules-hotpotqa_g1-4306a355,hotpotqa_g1,R1-rules,all,20,0.35,0.4511904761904762,0.6,,,unvalidated,1.0,,0.0,6179ad2c279d,True,7d96d2d957390595,2026-11-27T12:00:57+00:00,G1-7B/G1-7B-R1-rules-hotpotqa_g1-4306a355.json
+G1-7B,G1-7B-V4-hotpotqa_g1-3834a971,hotpotqa_g1,V4,all,20,0.35,0.4180371352785146,0.5,,,unvalidated,1.0,,0.0,6179ad2c279d,True,703ed912e7c15d5b,2026-11-27T11:04:23+00:00,G1-7B/G1-7B-V4-hotpotqa_g1-3834a971.json
+G1-7B,G1-7B-hybrid-hotpotqa_g1-f0c58bc3,hotpotqa_g1,hybrid,all,20,0.35,0.47672086225794674,0.6,,,unvalidated,0.975,,0.0,6179ad2c279d,True,703ed912e7c15d5b,2026-11-27T11:45:31+00:00,G1-7B/G1-7B-hybrid-hotpotqa_g1-f0c58bc3.json
+G1-7B,G1-7B-local-hotpotqa_g1-2f2a6a0e,hotpotqa_g1,local,all,20,0.25,0.3880252100840336,0.65,,,unvalidated,0.9,,0.0,6179ad2c279d,True,703ed912e7c15d5b,2026-11-27T11:26:25+00:00,G1-7B/G1-7B-local-hotpotqa_g1-2f2a6a0e.json
+G1-7B,G1-7B-mix-hotpotqa_g1-cf1be638,hotpotqa_g1,mix,all,20,0.3,0.43361741398208464,0.55,,,unvalidated,1.0,,0.0,6179ad2c279d,True,703ed912e7c15d5b,2026-11-27T12:00:19+00:00,G1-7B/G1-7B-mix-hotpotqa_g1-cf1be638.json
+G1-7B,G1-7B-naive-hotpotqa_g1-9dbfef0d,hotpotqa_g1,naive,all,20,0.3,0.4308942781356574,0.5,,,unvalidated,1.0,,0.0,6179ad2c279d,True,703ed912e7c15d5b,2026-11-27T11:07:28+00:00,G1-7B/G1-7B-naive-hotpotqa_g1-9dbfef0d.json

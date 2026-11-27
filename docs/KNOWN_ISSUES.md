@@ -10,7 +10,7 @@ Severity: **B** = blocks research results · **M** = limits a requirement · **L
 | X2 | B | **Judge model not chosen.** The proposal's generators span Claude, Gemma and Qwen, so the judge must come from another family. No ID is shipped (D-15); `experiment validate` fails until `models.judge` is set. | Team decision at kickoff. |
 | X3 | B | **Spending cap is $0.** Every paid call is blocked before it is made. | Run `index pilot` (5 %), estimate, agree a cap, set `budget.max_usd`. |
 | X4 | M | **Qdrant and Neo4j adapters verified against live containers** (reference stack). Milvus, pgvector, Memgraph and PostgreSQL-graph were not started (disk space): implemented, not externally verified; their tests skip with a reason. | `make db-up PROFILE=all`, set `ELEVATE_*` URLs, run `pytest tests/integration/test_db_services.py`. |
-| X5 | B | Human annotation gates not passed: 50-triple audit (G3), 100-answer judge validation (kappa ≥ 0.6), 50 failures per system. The tooling exports blank CSVs; **no labels have been fabricated**. | Two team members label the exported CSVs. |
+| X5 | M | **Human annotation removed (owner decision D-36).** The judge is validated automatically (GroUSE calibration + two-judge κ); there is no human check of answers on our own datasets, no triple audit and no failure-cause labelling. Two LLM judges can share a blind spot; state this in the report. | Accepted limitation; a human spot check can be added later if annotators become available. |
 | X6 | B | Hardware/disk: 16 GB RAM and only ~4–5 GB free disk (98 % full; another Docker project shares the machine). The $0 local plan (`configs/pipelines/local_free.yaml`: Qwen2.5-3B generator, Llama-3.2-3B judge, bge-small + bge-reranker) is configured but **not executed**: model downloads were stopped by owner decision when the disk could not hold them. Earlier note: The mid-tier generator Qwen3.6-35B-A3B and Qwen3-Embedding-8B cannot run locally; even the reference embedder (Qwen3-Embedding-0.6B, ≈1.2 GB) and `sentence-transformers`/torch (≈1 GB) were not installed, so the `local-models` extra is **implemented but not externally verified**. | GPU host or bigger workstation; `uv sync --extra local-models`. |
 
 ## Partially implemented / deviations
@@ -18,10 +18,10 @@ Severity: **B** = blocks research results · **M** = limits a requirement · **L
 | # | Sev | Item | Detail |
 |---|---|---|---|
 | P1 | M | FR-G11 LlamaIndex `SchemaLLMPathExtractor` fallback | **Not implemented.** `index validate` reports gate G3 and prints the fallback instruction. The integration point exists (`LightRAG.ainsert_custom_kg` accepts externally extracted triples with source chunks), but adding llama-index (heavy) without credentials to verify it was judged not worth an unverifiable code path. |
-| P2 | M | RAGAS package | Metrics implemented natively to the RAGAS definitions (D-19); the `ragas` package itself is an optional extra and has not been run. |
+| P2 | L | RAGAS package | Integrated (`ragas` 0.4.3, spec `ragas: true`), verified live with an Ollama judge. Needs `langchain-community<0.4` (0.4 removed a module ragas 0.4.3 imports; pinned in the extra). Its calls bypass the cost ledger and cache, so it accepts only $0 self-hosted judges; the native implementation (D-19) covers paid judges. |
 | P3 | M | GraphRAG-Bench official scorers | Not wired in. Its gold evidence is **paraphrased** (0.5 % verbatim, measured), so string-match evidence recall is reported as *undefined* for it (`evidence_verbatim_rate` < 0.9 in the manifest). Its LLM-judged evidence recall / context relevance need the benchmark's scripts plus an LLM. |
 | P4 | M | External reference systems (MS GraphRAG, HippoRAG 2, LlamaIndex PGI, Neo4j GraphRAG) | Integrated through the predictions contract (`experiment external`, D-14); the adapters that *run* those systems are not included. |
-| P5 | L | Langfuse tracing | Not implemented. Every call is recorded in the run ledger (`ledger.json`) and per-question `calls`, which carries the same information; Langfuse export is future work. |
+| P5 | L | Langfuse tracing | Not implemented; run tracking uses MLflow instead (D-36). Every call is still recorded in the run ledger (`ledger.json`) and per-question `calls`. |
 | P6 | L | R2 "small encoder" variant (optional in the plan) | Not implemented; TF-IDF + SVM is. |
 | P7 | L | E4 Level B warm-up | Level A applies 1,000 warm-up queries and median-of-3; Level B end-to-end runs report per-query latency percentiles without a separate warm-up phase. |
 | P8 | L | Community layer | Leiden (NetworkX 3.7) + LLM reports; at query time the top reports are added under the shared budget instead of MS GraphRAG's full map-reduce (documented in `graph/community.py`). |
@@ -65,7 +65,7 @@ Severity: **B** = blocks research results · **M** = limits a requirement · **L
   hangs; `docker ps` hangs). Likely damaged when the host disk filled. Restart Docker Desktop
   when no other project is using it, then re-run `make db-up` and the live DB tests.
 * **3B judge unreliable**: accepted clearly wrong answers (5 of 6 inspected for `mix`). No
-  judge-based number counts until the human agreement gate (κ ≥ 0.6) passes.
+  judge-based number counts until the automated judge validation passes (D-36).
 * **3B extractor too weak for RQ2**: 60 % of entities have no relation; 1,263 malformed
   relation lines discarded by LightRAG. Use a stronger extractor for E-block runs.
 * **Latency under caching**: queries with cached LLM calls are excluded from latency
@@ -78,7 +78,8 @@ Severity: **B** = blocks research results · **M** = limits a requirement · **L
 ## Found in the 7B G1 run (session 5)
 
 * The 8B judge is much more consistent than the 3B one (judge-free check agrees on all but one
-  inspected item) but is **still unvalidated** against humans: the κ gate is open.
+  inspected item) but is **not validated**: GroUSE pass rate 0.78 (< 0.8), lenient on
+  incomplete answers; G1-7B had no second judge.
 * The 7B G1 graph was built before the spacing-insensitive entity key (D-35): it contains 84
   split duplicate nodes (duplicate rate 4.8 %). Rebuild before reusing it for anything but G1.
 * Graph modes with a local 7B model are slow (local p50 116 s vs 14 s for V4 on a laptop).
@@ -108,3 +109,15 @@ Severity: **B** = blocks research results · **M** = limits a requirement · **L
   (no API keys); `.env.example` contains no secrets. A scan of every pushable file found no keys,
   passwords or personal paths.
 * `data/`, `indexes/`, `runs/`, `demo_output/` and caches are git-ignored.
+
+## Evaluation changes (session 7, D-36)
+
+* `ragas` calls go straight to the judge server (not through the response cache), so re-scoring
+  a run repeats them; keep `ragas: true` to blocks where its cost in GPU time is acceptable
+  (on by default only in S0; use `--ragas` per run).
+* Ollama tags have no revision, so the laptop judges' calibration files are keyed
+  `…@unpinned@judge-v1`: re-calibrate after `ollama pull` updates a model.
+* The G1 run records were written after the runs (`git_from_run: false`): their
+  `code.git_commit` is the commit that wrote the record, not the one that produced the run.
+* MLflow 3.18 warns about a deprecated SQLAlchemy loader (`noload`) when using the sqlite store;
+  harmless.

@@ -33,7 +33,9 @@ milvus = ["pymilvus>=2.5"]
 postgres = ["psycopg[binary]>=3.2", "pgvector>=0.3", "asyncpg>=0.30"]
 faiss = ["faiss-cpu>=1.9"]
 neo4j = ["neo4j>=5.25"]
-ragas = ["ragas>=0.3.7"]
+ragas = ["ragas>=0.4.3,<0.5", "langchain-community<0.4"]  # 0.4 dropped a module ragas 0.4.3 imports
+# Experiment tracking: every run logged to MLflow (local store, `mlflow ui` to browse).
+tracking = ["mlflow>=3.17,<4"]
 langfuse = ["langfuse>=3.8"]
 databases = ["elevate-rag[qdrant,milvus,postgres,faiss,neo4j]"]
 

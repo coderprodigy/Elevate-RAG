@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# CPU job: STEP=report (tables, paired tests, figures for $EXPERIMENT_ID) or STEP=check (env).
+# CPU job: STEP=report (run records, tables, paired tests, figures for $EXPERIMENT_ID) or
+# STEP=check (env).
 # Data preparation and model downloads need internet: run those on the login node instead
 # (`submit.sh prepare`), since compute nodes are often offline.
 #
@@ -18,7 +19,9 @@ read -r -a ERAG_CMD <<< "$ERAG"
 case "${STEP:?set STEP=report or STEP=check}" in
   report)
     : "${EXPERIMENT_ID:?set EXPERIMENT_ID to the id of the experiment spec, e.g. E2}"
-    out="$ELEVATE_ROOT/results/${EXPERIMENT_ID}"
+    out="$ELEVATE_RESULTS_DIR/${EXPERIMENT_ID}"
+    # consistent run records + INDEX.csv after all shards, judge validation re-checked
+    "${ERAG_CMD[@]}" results sync --experiment "$EXPERIMENT_ID" --results-dir "$ELEVATE_RESULTS_DIR"
     "${ERAG_CMD[@]}" report --experiment "$EXPERIMENT_ID" --out "$out" \
       --reference "${REFERENCE:-V4}"
     echo "report: $out/REPORT.md"

@@ -22,8 +22,13 @@ data/raw/
 data/processed/
 data/cache/
 indexes/
-runs/
-results/runs/
+# raw runs (predictions, caches, mlflow.db) at the repo root only; results/runs/ holds the
+# committed per-run records (D-36) and must NOT be ignored
+/runs/
+mlruns/
+mlflow.db
+mlflow-artifacts/
+results/runs/.INDEX.csv.*.tmp
 results/benchmarks/raw/
 models/
 *.sqlite

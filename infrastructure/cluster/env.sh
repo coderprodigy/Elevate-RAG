@@ -8,6 +8,8 @@ export ELEVATE_DATA_DIR="${ELEVATE_DATA_DIR:-$ELEVATE_ROOT/data}"
 export ELEVATE_INDEX_DIR="${ELEVATE_INDEX_DIR:-$ELEVATE_ROOT/indexes}"
 export ELEVATE_RUNS_DIR="${ELEVATE_RUNS_DIR:-$ELEVATE_ROOT/runs}"
 export ELEVATE_CACHE_DIR="${ELEVATE_CACHE_DIR:-$ELEVATE_ROOT/cache}"
+# run records (results/runs/), judge calibration and reports: copy this back into the repo
+export ELEVATE_RESULTS_DIR="${ELEVATE_RESULTS_DIR:-$ELEVATE_ROOT/results}"
 export HF_HOME="${HF_HOME:-$ELEVATE_ROOT/hf}"
 export TIKTOKEN_CACHE_DIR="${TIKTOKEN_CACHE_DIR:-$ELEVATE_ROOT/tiktoken}"
 export ELEVATE_JSON_LOGS="${ELEVATE_JSON_LOGS:-1}"
@@ -38,6 +40,11 @@ export GEN_TP="${GEN_TP:-2}"            # tensor-parallel GPUs for the generator
 export JUDGE_MODEL="${JUDGE_MODEL:-microsoft/phi-4}"
 export JUDGE_REVISION="${JUDGE_REVISION:-2db69c1c3e91a05d2c64a3185acfbaf36f744e25}"
 export JUDGE_TP="${JUDGE_TP:-1}"
+# Second judge (third model family) for the automated judge-agreement check. JUDGE2_TP=0 disables.
+export JUDGE2_MODEL="${JUDGE2_MODEL:-ibm-granite/granite-3.3-8b-instruct}"
+export JUDGE2_REVISION="${JUDGE2_REVISION:-51dd4bc2ade4059a6bd87649d68aa11e4fb2529b}"
+export JUDGE2_TP="${JUDGE2_TP:-1}"
+export JUDGE2_MAX_MODEL_LEN="${JUDGE2_MAX_MODEL_LEN:-16384}"
 export MAX_MODEL_LEN="${MAX_MODEL_LEN:-32768}"   # generator; Elevate-RAG prompts stay below 16k tokens
 export JUDGE_MAX_MODEL_LEN="${JUDGE_MAX_MODEL_LEN:-16384}"   # phi-4's context limit is 16k
 export GEN_PORT="${GEN_PORT:-8000}" JUDGE_PORT="${JUDGE_PORT:-8001}"
@@ -46,7 +53,7 @@ export GEN_PORT="${GEN_PORT:-8000}" JUDGE_PORT="${JUDGE_PORT:-8001}"
 export SLURM_ACCOUNT="${SLURM_ACCOUNT:-}"
 export GPU_PARTITION="${GPU_PARTITION:-gpu}"
 export CPU_PARTITION="${CPU_PARTITION:-cpu}"
-export GPUS_PER_JOB="${GPUS_PER_JOB:-$((GEN_TP + JUDGE_TP))}"
+export GPUS_PER_JOB="${GPUS_PER_JOB:-$((GEN_TP + JUDGE_TP + JUDGE2_TP))}"
 export GPU_TIME="${GPU_TIME:-12:00:00}"
 export CPU_TIME="${CPU_TIME:-02:00:00}"
 
@@ -55,4 +62,4 @@ export CPU_TIME="${CPU_TIME:-02:00:00}"
 # module load cuda/12.4
 
 mkdir -p "$ELEVATE_DATA_DIR" "$ELEVATE_INDEX_DIR" "$ELEVATE_RUNS_DIR/logs" "$ELEVATE_CACHE_DIR" \
-  "$HF_HOME" "$TIKTOKEN_CACHE_DIR"
+  "$HF_HOME" "$TIKTOKEN_CACHE_DIR" "$ELEVATE_RESULTS_DIR"

@@ -177,11 +177,8 @@ def test_cli_smoke(tmp_path: Path) -> None:
     assert res.exit_code == 0 and '"level": "R1"' in res.output
     res = runner.invoke(app, ["graph", str(cfg)])
     assert res.exit_code == 0 and "top_entities" in res.output
-    res = runner.invoke(
-        app, ["index", "validate", str(cfg), "--audit-out", str(tmp_path / "audit.csv")]
-    )
+    res = runner.invoke(app, ["index", "validate", str(cfg)])
     assert res.exit_code == 0 and "gate_G3_coverage_ok" in res.output
-    assert (tmp_path / "audit.csv").exists()
     res = runner.invoke(
         app,
         [

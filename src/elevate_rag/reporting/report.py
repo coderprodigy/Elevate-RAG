@@ -58,13 +58,21 @@ TABLE_FIELDS = [
     "dataset",
     "demo",
     "n",
+    "em",
+    "em_ci",
+    "f1",
     "accuracy",
     "accuracy_ci",
-    "f1",
-    "em",
+    "accuracy_judge2",
+    "judge_kappa",
+    "judge_status",
     "recall@10",
     "ndcg@10",
     "refusal_correct",
+    "ragas_answer_correctness",
+    "ragas_faithfulness",
+    "ragas_context_precision",
+    "ragas_context_recall",
     "error_rate",
     "latency_p50_s",
     "latency_p95_s",
@@ -80,6 +88,7 @@ def results_table(runs: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     for r in runs:
         s, d = r["summary"], r["manifest"]["definition"]
         acc = s["overall"].get("correct")
+        em = s["overall"].get("em")
         eff = s.get("efficiency", {})
         rows.append(
             {
@@ -88,13 +97,26 @@ def results_table(runs: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
                 "dataset": d["dataset"],
                 "demo": r["manifest"].get("demo", False),
                 "n": s["overall"]["n"],
+                "em": em["mean"] if em else None,
+                "em_ci": f"[{em['ci_low']:.3f}, {em['ci_high']:.3f}]" if em else "",
+                "f1": _metric(s, "f1"),
                 "accuracy": acc["mean"] if acc else None,
                 "accuracy_ci": f"[{acc['ci_low']:.3f}, {acc['ci_high']:.3f}]" if acc else "",
-                "f1": _metric(s, "f1"),
-                "em": _metric(s, "em"),
+                "accuracy_judge2": _metric(s, "correct_judge2"),
+                "judge_kappa": (s.get("judge_agreement") or {}).get("kappa"),
+                "judge_status": (s.get("judge_validation") or {}).get("status"),
                 "recall@10": _metric(s, "recall@10"),
                 "ndcg@10": _metric(s, "ndcg@10"),
                 "refusal_correct": _metric(s, "refusal_correct"),
+                **{
+                    k: _metric(s, k)
+                    for k in (
+                        "ragas_answer_correctness",
+                        "ragas_faithfulness",
+                        "ragas_context_precision",
+                        "ragas_context_recall",
+                    )
+                },
                 "error_rate": s.get("error_rate"),
                 **{
                     k: eff.get(k)
@@ -120,20 +142,29 @@ def write_csv(path: Path, rows: Sequence[dict[str, Any]], fields: Sequence[str])
         w.writerows(rows)
 
 
-def _correct_by_question(run_dir: Path) -> dict[str, bool]:
+# Binary per-question outcomes compared between variants: the official exact match (no judge
+# involved) and the primary judge's verdict. Unanswerable questions count by refusal for both.
+PAIRED_METRICS = ("em", "correct")
+
+
+def _correct_by_question(run_dir: Path, metric: str = "correct") -> dict[str, bool]:
     out = {}
     for line in (run_dir / "scored.jsonl").read_text().splitlines():
         r = json.loads(line)
-        if r["scores"].get("correct") is not None:
-            out[r["question_id"]] = bool(r["scores"]["correct"])
+        sc = r["scores"]
+        v = sc.get(metric)
+        if metric == "em" and v is None and sc.get("answerable") is False:
+            v = sc.get("refusal_correct")
+        if v is not None:
+            out[r["question_id"]] = bool(v)
     return out
 
 
 def paired_comparisons(
     runs: Sequence[dict[str, Any]], reference_variant: str
 ) -> list[dict[str, Any]]:
-    """McNemar of every variant vs the reference variant, per dataset, Holm-corrected within
-    each (experiment, dataset) family."""
+    """McNemar of every variant vs the reference variant, per dataset and metric (EM and judge
+    correctness), Holm-corrected within each (experiment, dataset, metric) family."""
     groups: dict[tuple[str, str], dict[str, Path]] = defaultdict(dict)
     for r in runs:
         d = r["manifest"]["definition"]
@@ -142,12 +173,21 @@ def paired_comparisons(
     for (exp, ds), variants in sorted(groups.items()):
         if reference_variant not in variants:
             continue
-        ref = _correct_by_question(variants[reference_variant])
-        fam: list[dict[str, Any]] = []
+        for metric in PAIRED_METRICS:
+            out += _paired_family(exp, ds, metric, variants, reference_variant)
+    return out
+
+
+def _paired_family(
+    exp: str, ds: str, metric: str, variants: dict[str, Path], reference_variant: str
+) -> list[dict[str, Any]]:
+    ref = _correct_by_question(variants[reference_variant], metric)
+    fam: list[dict[str, Any]] = []
+    if ref:
         for name, path in sorted(variants.items()):
             if name == reference_variant:
                 continue
-            other = _correct_by_question(path)
+            other = _correct_by_question(path, metric)
             qids = sorted(set(ref) & set(other))  # alignment by question ID
             if not qids:
                 continue
@@ -156,6 +196,7 @@ def paired_comparisons(
                 {
                     "experiment": exp,
                     "dataset": ds,
+                    "metric": metric,
                     "variant": name,
                     "reference": reference_variant,
                     "n": res.n,
@@ -167,10 +208,9 @@ def paired_comparisons(
                     "cohens_h": res.effect_size,
                 }
             )
-        for row, (p_adj, rej) in zip(fam, holm_bonferroni([f["p"] for f in fam]), strict=True):
-            row["p_holm"], row["significant"] = p_adj, rej
-        out += fam
-    return out
+    for row, (p_adj, rej) in zip(fam, holm_bonferroni([f["p"] for f in fam]), strict=True):
+        row["p_holm"], row["significant"] = p_adj, rej
+    return fam
 
 
 # ------------------------------------------------------------------------------- figures
@@ -319,8 +359,8 @@ def fig_recall_qps(bench: Sequence[dict[str, Any]], path: Path) -> Path | None:
 def fig_factor_importance(
     rows: Sequence[dict[str, Any]], path: Path, demo: bool = False
 ) -> Path | None:
-    """RQ5: accuracy change vs the reference per factor level, with 95 % CI (from
-    `paired_comparisons`)."""
+    """RQ5: exact-match change vs the reference per factor level, with 95 % CI (the `em` rows
+    of `paired_comparisons`)."""
     if not rows:
         return None
     rows = sorted(rows, key=lambda r: r["diff"])
@@ -336,8 +376,8 @@ def fig_factor_importance(
     )
     ax.set_yticks(list(ys), [f"{r['variant']} ({r['dataset']})" for r in rows], fontsize=8)
     ax.axvline(0, color=TEXT2, linewidth=1)
-    _style(ax, "Accuracy change vs reference configuration", "")
-    ax.set_xlabel("Δ accuracy (paired, 95% CI)", color=TEXT2)
+    _style(ax, "Exact-match change vs reference configuration", "")
+    ax.set_xlabel("Δ EM (paired, 95% CI)", color=TEXT2)
     return _finish(fig, path, demo)
 
 
@@ -375,28 +415,6 @@ def fig_interaction(
     return _finish(fig, path, any(r["manifest"].get("demo") for r in runs))
 
 
-def fig_failure_causes(counts: dict[str, dict[str, int]], path: Path) -> Path | None:
-    """Failure-cause chart: one horizontal bar group per system (human-labelled counts)."""
-    if not counts:
-        return None
-    causes = sorted({c for v in counts.values() for c in v})
-    systems = sorted(counts)[: len(SERIES)]
-    fig, ax = plt.subplots(figsize=(7, 0.5 * len(causes) * max(1, len(systems)) / 2 + 2))
-    h = 0.8 / len(systems)
-    for i, sysname in enumerate(systems):
-        ax.barh(
-            [j + i * h for j in range(len(causes))],
-            [counts[sysname].get(c, 0) for c in causes],
-            height=h * 0.9,
-            color=SERIES[i],
-            label=sysname,
-        )
-    ax.set_yticks([j + 0.4 - h / 2 for j in range(len(causes))], causes)
-    _style(ax, "Failure causes (human-labelled samples)", "")
-    ax.legend(frameon=False, fontsize=8)
-    return _finish(fig, path, False)
-
-
 def write_markdown_report(
     path: Path,
     table: Sequence[dict[str, Any]],
@@ -411,6 +429,20 @@ def write_markdown_report(
             "data. These numbers are *not* research results.",
             "",
         ]
+    statuses = {r.get("judge_status") for r in table}
+    lines += [
+        "**Primary metric: exact match (EM) and token F1**, the benchmarks' official, "
+        "judge-free answer metrics. `accuracy` is the LLM judge's verdict; it counts only "
+        "where `judge_status` is `validated` (GroUSE calibration passed for both judges and "
+        "their agreement kappa >= 0.6 on this run's answers).",
+        "",
+    ]
+    if statuses - {"validated"}:
+        lines += [
+            "> Some runs have **unvalidated** judge scores: read `accuracy` there as "
+            "indicative only.",
+            "",
+        ]
     lines += [
         "## Runs",
         "",
@@ -423,6 +455,7 @@ def write_markdown_report(
         cols = [
             "experiment",
             "dataset",
+            "metric",
             "variant",
             "reference",
             "n",

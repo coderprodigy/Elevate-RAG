@@ -284,3 +284,54 @@ from code comments and the traceability matrix.
   the entity-type guard. The A2 ablation measures resolution's effect either way.
 * **Consequence:** graphs built before this change (both G1 graphs) keep their duplicates until
   rebuilt; coverage was re-validated (7B: 4/4; 3B: 4/4, unchanged).
+
+## D-36 Automated judge validation and traceable run records replace human annotation (owner decision, 2026-11-27)
+
+* **Decision (project owner):** remove the human-annotation gates (100-answer judge check with
+  two annotators, 50-triple audit, 50-failure cause labelling) and the tooling behind them
+  (`elevate-rag annotate …`, the exported CSVs). In their place:
+  1. **Primary metric: the benchmarks' official, judge-free answer metrics**, exact match and
+     token F1 with SQuAD normalisation (refusal accuracy for unanswerable questions). Paired
+     tests (McNemar, Holm) are reported on EM and on the judge verdict.
+  2. **Two LLM judges from different families** (`models.judge`, `models.judge2`) score every
+     answer; their agreement (Cohen's κ over the answers both judged with an LLM, refusal-rule
+     verdicts excluded) is reported per run.
+  3. **Judge calibration on GroUSE** (Muller et al., COLING 2025; MIT; pinned revision and
+     SHA-256), a published meta-evaluation benchmark whose expected verdicts were written by
+     experts: `elevate-rag judge calibrate`. The 63 cases that apply to a reference-based
+     correctness judge are used (mapping in `evaluation/judge_calibration.py`).
+  4. A run's judge accuracy is **validated** only when both judges pass calibration (≥ 80 %)
+     and κ ≥ 0.6 on that run's answers; otherwise every report and record marks it
+     **unvalidated** with the reasons.
+  5. **RAGAS** (package `ragas` 0.4.3, Apache-2.0) adds faithfulness, context precision/recall
+     and answer correctness, scored by the judge endpoint (spec `ragas: true` or `--ragas`).
+     Its calls bypass the cost ledger and cache, so only a $0 self-hosted judge is accepted.
+     The native implementation (D-19) stays for paid judges.
+  6. **Every completed run writes a committed record** to `results/runs/<experiment>/<run_id>.json`
+     and a line in `results/runs/INDEX.csv`: dataset version, variant, config hash, index key,
+     every model with its revision, git commit/branch/dirty flag captured when the run started,
+     headline metrics with CIs, judge agreement and validation, efficiency and cost. Records
+     contain no host names or absolute paths. `elevate-rag results sync` rebuilds them from raw
+     runs (e.g. copied back from a cluster) and re-checks judge validation.
+  7. **MLflow** (Apache-2.0, extra `tracking`, `--mlflow` / `ELEVATE_MLFLOW=1`) logs the same
+     parameters, metrics and tags plus the run's summary/manifest to a local store.
+* **Why:** the team has no annotator time. Every automated evaluation framework surveyed
+  (RAGAS, DeepEval, MLflow evaluate, Phoenix) itself relies on an LLM judge, so none removes
+  the need to check the judge; EM/F1 need no judge, GroUSE supplies expert-written expected
+  verdicts, and cross-family agreement detects judges that disagree on this run's data. Hosted
+  platforms (LangSmith, Braintrust) were rejected: paid, and every question, answer and context
+  would leave the project.
+* **What is lost (stated in the report):** no human check of answers *on our datasets*; two
+  LLM judges can share a blind spot; GroUSE is small (63 applicable cases) and English-only; the
+  triple audit (FR-G9) and failure-cause labelling (FR-E11) are no longer done. Graph quality is
+  still checked automatically (G3 coverage, shape, duplicate rate).
+* **First measurement:** Llama-3.1-8B (the laptop judge) passes 49/63 GroUSE cases (0.78,
+  below 0.8): 35/36 complete answers rated `correct`, but all 9 partially complete answers
+  were also rated `correct` and 4 of 18 answers containing none of the reference were rated
+  `partial`: it is too lenient, as G1 suspected (`results/judge_calibration/`).
+* **Second judge:** IBM Granite-3.3-8B-Instruct (ungated, Apache-2.0; revision pinned in
+  `cluster_gpu.yaml`; `granite3.3:8b` on Ollama), a family different from the Qwen generators
+  and the phi/Llama judges.
+* **Run ids:** an unset `judge2` is left out of the config hash, so runs from before this change
+  keep their ids; configs that now define `judge2` (`local_7b`, `cluster_gpu*`) get new ids
+  because their evaluation definition changed.

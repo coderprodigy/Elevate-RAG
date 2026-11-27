@@ -5,18 +5,26 @@ choose between them**, built from *Hybrid Vector + Graph RAG: Project Design & E
 and the *Elevate-RAG Master Implementation Specification*.
 
 > **Status (2026-11-27)**
-> * **Done:** the software is built and tested (134 tests, 86 % coverage). Seven datasets are
+> * **Done:** the software is built and tested (140 tests, 85 % coverage). Seven datasets are
 >   prepared from pinned versions. Model-free baselines are measured. The first end-to-end gate
 >   (G1) passed with free local models, at 3B and at 7B/8B size.
+> * **Evaluation is fully automatic** (no human annotators):
+>   * official EM/F1 are the primary metrics;
+>   * two LLM judges from different model families score every answer;
+>   * each judge is calibrated on the GroUSE benchmark;
+>   * RAGAS adds the standard RAG metrics.
+>
+>   Every run writes a traceable record to [`results/runs/`](results/runs/INDEX.csv), and can
+>   also be logged to MLflow.
 > * **Not done:** the research experiments E1–E6 and A1–A4. They need GPU time (EC2 or the
->   college cluster) and two human annotators to validate the LLM judge.
+>   college cluster).
 > * **Untested:** the EC2 and cluster scripts are ready but have **not yet run on a real GPU
 >   machine**.
 >
 > This README is the full report: [problem](#1-problem-statement), [what was done](#2-what-has-been-done-step-by-step),
 > [results](#3-results-so-far), [what remains](#4-what-still-needs-to-be-done),
 > [run locally](#5-run-it-locally), [run on EC2](#6-run-the-scaled-version-on-aws-ec2-gpu),
-> [college cluster](#7-run-on-the-college-cluster-slurm).
+> [college cluster](#7-run-on-the-college-cluster-slurm), [team roadmap](#8-team-roadmap-3-days-6-people).
 
 ---
 
@@ -69,8 +77,8 @@ the retrieval mode changes, so differences can be attributed to it.
 * Every requirement from the plan and the spec was extracted with a stable ID:
   [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md), mapped to code and tests in
   [docs/REQUIREMENTS_TRACEABILITY.md](docs/REQUIREMENTS_TRACEABILITY.md).
-* 35 design decisions are recorded with rationale and alternatives:
-  [docs/DECISIONS.md](docs/DECISIONS.md) (D-01 to D-35).
+* 36 design decisions are recorded with rationale and alternatives:
+  [docs/DECISIONS.md](docs/DECISIONS.md) (D-01 to D-36).
 * LightRAG 1.5.7's API was verified against the installed package before being used.
 
 ### Step 2: reproducible environment
@@ -115,7 +123,7 @@ question ID, and evidence that is paraphrased rather than quoted (see
 * All five LightRAG modes are supported: naive, local, global, hybrid and mix. An optional
   community layer (Leiden clustering plus LLM reports) is available as an ablation.
 * Graph quality is checked before any QA: answer-entity coverage (gate G3, at least 60 %), degree,
-  duplicate rate, build time and tokens. A triple-audit sample is exported for human checking.
+  duplicate rate, build time and tokens.
 
 ### Step 6: routers (R0–R4)
 | Router | How it routes |
@@ -139,12 +147,16 @@ The oracle (the cheapest correct mode, computed offline) gives regret.
 
 ### Step 8: evaluation and statistics
 * Metrics:
+  * answers (primary): **exact match and token F1**, the benchmarks' official judge-free
+    metrics, and refusal accuracy on unanswerable questions;
+  * answers (LLM): correctness from **two judges of different model families**, and pairwise
+    comparisons;
+  * RAG quality: the **[RAGAS](https://docs.ragas.io) package**: faithfulness, context
+    precision, context recall, answer correctness;
   * retrieval: recall@k, nDCG@10, evidence recall;
-  * answers: EM, token F1, LLM-judge correctness, refusal accuracy, pairwise comparisons;
   * efficiency: latency p50/p95, tokens and $ per 1,000 queries.
-* Statistics: 95 % bootstrap CIs, exact McNemar with Holm correction, and effect sizes.
-* Human validation tooling: judge-agreement (κ) and triple-audit samples, and failure analysis.
-  No human label has ever been fabricated.
+* Statistics: 95 % bootstrap CIs, exact McNemar with Holm correction on EM and on the judge
+  verdict, and effect sizes.
 
 ### Step 9: experiments as config
 * E1–E6, A1–A4, G1 and S0 are YAML specs. Each variant changes one factor.
@@ -176,7 +188,27 @@ These runs found and fixed **11 bugs** that unit tests could not have found, inc
 * 7B models write 54 % of entity names without spaces ("HansenClarke"), which split entities and
   broke the coverage gate.
 
-### Step 13: scale-out
+### Step 13: automatic judge validation and traceable results (D-36)
+The human-annotation steps were removed. Three automatic mechanisms replace them:
+* **Judge calibration:** `elevate-rag judge calibrate` scores each judge on
+  [GroUSE](https://arxiv.org/abs/2409.06595), a published benchmark of expert-written expected
+  verdicts.
+* **Judge agreement:** the two judges' agreement (Cohen's κ) is measured on every run.
+* **Validation status:** a run's judge accuracy is `validated` only if both judges pass
+  calibration (≥ 80 %) and κ ≥ 0.6. Otherwise it is marked `unvalidated`, with the reasons.
+
+The first real calibration found the laptop judge (Llama-3.1-8B) **too lenient**: 0.78, below
+the bar.
+
+Every completed run writes `results/runs/<experiment>/<run_id>.json` and a line in
+[`results/runs/INDEX.csv`](results/runs/INDEX.csv):
+* git commit, config hash, dataset version, and every model with its revision;
+* metrics with CIs and the judge status.
+
+Runs can also be logged to MLflow (`--mlflow`). How to trace a number back:
+[results/README.md](results/README.md#tracing-a-number-back).
+
+### Step 14: scale-out
 Configs and scripts now cover three settings:
 * GPU servers: `cluster_gpu.yaml`, `cluster_gpu_7b.yaml`;
 * a SLURM cluster: [infrastructure/cluster/](infrastructure/cluster/);
@@ -204,32 +236,43 @@ The routers were also measured on real data:
 | significant difference from V4 | none | none |
 
 **Reading:** the pipeline works end to end. With 20 questions no retrieval mode is significantly
-better than the vector baseline. The 3B run's "mix wins" result was judge noise. **None of these
-numbers answers a research question yet**; that needs the full datasets (E1/E2) and a judge
-validated by humans. Details: [results/README.md](results/README.md).
+better than the vector baseline. The 3B run's "mix wins" result was judge noise.
+
+On the official metric (EM), the 7B run's six variants score 0.25–0.35. No G1 judge score is
+validated: those runs had one judge, and it scored 0.78 on GroUSE.
+
+**None of these numbers answers a research question yet**; that needs the full datasets (E1/E2).
+Details: [results/README.md](results/README.md), per-run records in
+[results/runs/INDEX.csv](results/runs/INDEX.csv).
+
+**Judge calibration on GroUSE:** Llama-3.1-8B passes 49 of 63 cases (0.78).
+* It rates complete answers correctly (35/36).
+* It also rated all 9 partially complete answers `correct`.
 
 ## 4. What still needs to be done
 
 | # | Task | Needs | How |
 |---|---|---|---|
 | 1 | **Scale tier 0** on a GPU machine: G1's 20 questions with vLLM models | EC2 GPU or the cluster | [§6](#6-run-the-scaled-version-on-aws-ec2-gpu) step 7 / `submit.sh smoke` |
-| 2 | **Human judge validation:** two people label 100 answers; κ ≥ 0.6 required before any judge score counts | two annotators | `results/g1*/judge_sample.csv`, [docs/RUNNING.md §6](docs/RUNNING.md#6-human-validation-all-setups) |
-| 3 | **Triple audit (G3):** two people label sampled triples | two annotators | `results/g1*/triple_audit_sample.csv` |
+| 2 | **Calibrate the GPU judges** (phi-4, Granite-3.3-8B) on GroUSE; done automatically by tier 0 | GPU | `elevate-rag judge calibrate` ([RUNNING §6](docs/RUNNING.md#6-evaluation-judge-validation-and-run-records-all-setups)) |
+| 3 | **Commit the run records** after every block (`results/runs/`, `results/judge_calibration/`) | – | §6 step 12 |
 | 4 | **Tier 1:** one dataset (MultiHop-RAG), 200 questions, all modes, to measure throughput and extrapolate time | GPU | §6 step 8 |
 | 5 | **E1 + E2** on all six datasets (RQ1, RQ2) | GPU, ~a day per block (measure in tier 1) | §6 step 9 |
 | 6 | **E3** routers: dev labels → train R2 → test (RQ3) | GPU | §6 step 10 |
 | 7 | **E5, E6, A1–A4**: model factors, generator size, ablations (RQ5) | GPU; some variants name API models and need a budget | §6 step 10 |
 | 8 | **E4** databases: start Milvus, pgvector, Memgraph and run the DB tests (RQ4) | Docker on EC2 | §6 step 11 |
-| 9 | Failure analysis: 50 failures per system, labelled by cause | annotators | `elevate-rag annotate failures` |
-| 10 | Final report: `elevate-rag report` per block, then freeze results (gate G4) | – | – |
-| 11 | Housekeeping: choose the LICENSE holder; restart Docker Desktop on the laptop | owner | – |
+| 9 | Final report: `elevate-rag report` per block, then freeze results (gate G4) | – | – |
+| 10 | Housekeeping: choose the LICENSE holder; restart Docker Desktop on the laptop | owner | – |
 
 Deliberately left out or partial (with reasons in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)):
 * the LlamaIndex extractor fallback;
 * the official GraphRAG-Bench scorers;
+* human annotation: judge check, triple audit and failure-cause labelling were removed by
+  decision D-36 and replaced by the automatic judge validation. The limitation is stated in
+  [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md);
 * runners for external systems (Microsoft GraphRAG, HippoRAG 2). Their outputs plug in through
   `elevate-rag experiment external`;
-* Langfuse tracing.
+* Langfuse tracing (MLflow is used instead).
 
 ## 5. Run it locally
 
@@ -244,24 +287,30 @@ open demo_output/report/REPORT.md            # Linux: xdg-open. Every number is 
 ```
 
 ### 5b. Gate G1 with real models on a laptop (Ollama, $0)
-You need 16 GB RAM and about 12 GB of free disk for the 7B/8B pair. The 3B pair needs 8 GB RAM.
+You need 16 GB RAM and about 17 GB of free disk for the 7B models and the two 8B judges. The 3B
+pair needs 8 GB RAM.
 ```bash
-uv sync --locked --extra faiss --extra local-models
+uv sync --locked --extra faiss --extra local-models --extra ragas --extra tracking
 uv run elevate-rag data prepare hotpotqa --n-questions 20 --as hotpotqa_g1
 uv run python scripts/download_models.py configs/pipelines/local_7b.yaml   # embedder + reranker
 
 # Ollama's context MUST be >= 8192; the default 4096 silently truncates prompts.
 # On macOS with Homebrew, run `brew services stop ollama` first.
 OLLAMA_CONTEXT_LENGTH=8192 ollama serve &
-ollama pull qwen2.5:7b-instruct && ollama pull llama3.1:8b
+ollama pull qwen2.5:7b-instruct && ollama pull llama3.1:8b && ollama pull granite3.3:8b
 
 scripts/run_pipeline.sh configs/pipelines/local_7b.yaml \
   configs/experiments/G1_smoke_local_7b.yaml hotpotqa_g1 results/g1_7b \
   --set vector_store.backend=exact --set lightrag.vector_storage=NanoVectorDBStorage \
   --set graph_store.backend=networkx --set lightrag.graph_storage=NetworkXStorage
 ```
-* It takes about 4.3 hours on a 16 GB Apple-silicon laptop. Keep it plugged in;
-  `run_pipeline.sh` keeps the Mac awake.
+* It takes about 4.3 hours on a 16 GB Apple-silicon laptop, plus time for the second judge.
+  Ollama swaps the models in and out of RAM. Keep the laptop plugged in; `run_pipeline.sh`
+  keeps the Mac awake.
+* Steps: index + graph → G3 check → judge calibration on GroUSE → 6 variants → report.
+* Every run writes its record to `results/runs/G1-7B/`, and `results/runs/INDEX.csv` lists
+  them. Add `ELEVATE_MLFLOW=1` to also log to MLflow, then browse with
+  `uv run mlflow ui --backend-store-uri sqlite:///runs/mlflow.db`.
 * For the 3B pair, use `local_free.yaml`, `G1_smoke_local.yaml`, `qwen2.5:3b-instruct` and
   `llama3.2:3b`.
 * On macOS keep `exact` vectors: FAISS and PyTorch cannot share a process there.
@@ -283,8 +332,8 @@ Start with option A. Move to option B only after tiers 0–1 work.
 
 | Option | Config | Instance (GPUs) | GPU use | Data volume |
 |---|---|---|---|---|
-| **A: 7B generator** | `cluster_gpu_7b.yaml` | `g5.12xlarge` (4× A10G 24 GB) or `g6.12xlarge` (4× L4 24 GB) | GPU 0: Qwen2.5-7B; GPUs 1–2: phi-4 judge (TP 2) | 200 GB gp3 |
-| **B: reference open models** | `cluster_gpu.yaml` | `g6e.48xlarge` (8× L40S 48 GB) or `p4de.24xlarge` (8× A100 80 GB) | Qwen3.6-35B-A3B on 4× L40S or 2× A100, plus phi-4 on one more GPU | 300 GB gp3 |
+| **A: 7B generator** | `cluster_gpu_7b.yaml` | `g5.12xlarge` (4× A10G 24 GB) or `g6.12xlarge` (4× L4 24 GB) | GPU 0: Qwen2.5-7B; GPUs 1–2: phi-4 judge (TP 2); GPU 3: Granite-3.3-8B second judge | 200 GB gp3 |
+| **B: reference open models** | `cluster_gpu.yaml` | `g6e.48xlarge` (8× L40S 48 GB) or `p4de.24xlarge` (8× A100 80 GB) | Qwen3.6-35B-A3B on 4× L40S or 2× A100, then phi-4 and Granite on one GPU each | 300 GB gp3 |
 
 * **Prices change.** Check the current price in your region and use the tier 1 timing to
   estimate the full run before launching big blocks.
@@ -320,13 +369,15 @@ sudo mkdir -p /mnt/elevate && sudo mount /dev/nvme1n1 /mnt/elevate && sudo chown
 ```bash
 git clone <your-repo-url> elevate-rag && cd elevate-rag
 curl -LsSf https://astral.sh/uv/0.11.8/install.sh | sh && source "$HOME/.local/bin/env"
-uv sync --locked --extra faiss --extra local-models
+uv sync --locked --extra faiss --extra local-models --extra ragas --extra tracking
 
 cat > ~/elevate.env <<'EOF'
 export ELEVATE_DATA_DIR=/mnt/elevate/data ELEVATE_INDEX_DIR=/mnt/elevate/indexes
 export ELEVATE_CACHE_DIR=/mnt/elevate/cache ELEVATE_RUNS_DIR=/mnt/elevate/runs
 export HF_HOME=/mnt/elevate/hf
 export ELEVATE_GEN_URL=http://127.0.0.1:8000/v1 ELEVATE_JUDGE_URL=http://127.0.0.1:8001/v1
+export ELEVATE_JUDGE2_URL=http://127.0.0.1:8002/v1
+export ELEVATE_MLFLOW=1                     # every run also logged to $ELEVATE_RUNS_DIR/mlflow.db
 EOF
 source ~/elevate.env                        # repeat in every new shell
 mkdir -p "$ELEVATE_RUNS_DIR/logs"
@@ -336,8 +387,8 @@ mkdir -p "$ELEVATE_RUNS_DIR/logs"
 ```bash
 uv run elevate-rag data prepare all                                         # 7 datasets
 uv run elevate-rag data prepare hotpotqa --n-questions 20 --as hotpotqa_g1  # tier 0 subset
-uv run python scripts/download_models.py configs/pipelines/cluster_gpu_7b.yaml   # option A, ≈ 48 GB
-# option B: configs/pipelines/cluster_gpu.yaml (≈ 105 GB)
+uv run python scripts/download_models.py configs/pipelines/cluster_gpu_7b.yaml   # option A, ≈ 65 GB
+# option B: configs/pipelines/cluster_gpu.yaml (≈ 121 GB)
 
 uv venv .venv-vllm --python 3.12                     # vLLM in its own environment
 uv pip install --python .venv-vllm/bin/python vllm==0.33.0
@@ -356,9 +407,13 @@ CUDA_VISIBLE_DEVICES=1,2 HF_HUB_OFFLINE=1 nohup .venv-vllm/bin/vllm serve micros
   --revision 2db69c1c3e91a05d2c64a3185acfbaf36f744e25 --served-model-name microsoft/phi-4 \
   --host 127.0.0.1 --port 8001 --tensor-parallel-size 2 --max-model-len 16384 --seed 0 \
   > "$ELEVATE_RUNS_DIR/logs/vllm-judge.log" 2>&1 &
+CUDA_VISIBLE_DEVICES=3 HF_HUB_OFFLINE=1 nohup .venv-vllm/bin/vllm serve ibm-granite/granite-3.3-8b-instruct \
+  --revision 51dd4bc2ade4059a6bd87649d68aa11e4fb2529b --served-model-name ibm-granite/granite-3.3-8b-instruct \
+  --host 127.0.0.1 --port 8002 --max-model-len 16384 --seed 0 \
+  > "$ELEVATE_RUNS_DIR/logs/vllm-judge2.log" 2>&1 &
 
-# wait until both answer (a few minutes); on failure read the two logs above
-until curl -sf localhost:8000/v1/models >/dev/null && curl -sf localhost:8001/v1/models >/dev/null; do sleep 15; done; echo ready
+# wait until all three answer (a few minutes); on failure read the logs above
+for p in 8000 8001 8002; do until curl -sf localhost:$p/v1/models >/dev/null; do sleep 15; done; done; echo ready
 uv run elevate-rag env                       # versions and what is reachable
 ```
 
@@ -368,15 +423,24 @@ uv run elevate-rag env                       # versions and what is reachable
   `--tensor-parallel-size 2` on A100 80 GB;
 * add `--reasoning-parser qwen3 --language-model-only`.
 
-The judge runs alone on the next GPU, without `--tensor-parallel-size`. In every command below,
-use `cluster_gpu.yaml` in place of `cluster_gpu_7b.yaml`.
+phi-4 and Granite each run alone on the next free GPU (`CUDA_VISIBLE_DEVICES=4` and `5` on L40S,
+`2` and `3` on A100), without `--tensor-parallel-size`. In every command below, use
+`cluster_gpu.yaml` in place of `cluster_gpu_7b.yaml`.
 
 ### Step 7: tier 0, the smoke test (20 questions, about 1 hour)
 ```bash
 scripts/run_pipeline.sh configs/pipelines/cluster_gpu_7b.yaml \
   configs/experiments/S0_cluster_smoke.yaml hotpotqa_g1 results/s0_ec2
 ```
-* It runs index + graph → G3 check → 6 variants → report in `results/s0_ec2/report/REPORT.md`.
+* Steps: index + graph → G3 check → GroUSE calibration of both judges → 6 variants with RAGAS
+  metrics → report in `results/s0_ec2/report/REPORT.md`.
+* Outputs on the instance:
+  * run records in `results/runs/S0/` and `results/runs/INDEX.csv`;
+  * calibration in `results/judge_calibration/`;
+  * MLflow in `$ELEVATE_RUNS_DIR/mlflow.db`.
+* Check `judge_status`:
+  * `validated`: the judge scores count;
+  * `unvalidated`: the record lists why, and EM/F1 remain the numbers to cite.
 * Step logs are in `$ELEVATE_RUNS_DIR/logs/`. If a step fails, the script prints the end of its
   log.
 * Compare with `results/g1_7b/`; the numbers will differ somewhat, because the embedder and judge
@@ -387,19 +451,21 @@ scripts/run_pipeline.sh configs/pipelines/cluster_gpu_7b.yaml \
 P=configs/pipelines/cluster_gpu_7b.yaml
 uv run elevate-rag index pilot    $P --set dataset=multihop_rag           # extrapolated build time
 uv run elevate-rag index build    $P --set dataset=multihop_rag
-uv run elevate-rag index validate $P --set dataset=multihop_rag --audit-out results/ec2/multihop_triples.csv
+uv run elevate-rag index validate $P --set dataset=multihop_rag             # G3 coverage gate
 uv run elevate-rag experiment run configs/experiments/E2_retrieval_modes.yaml \
   --pipeline $P --datasets multihop_rag --limit 200 --yes
 uv run elevate-rag report --experiment E2 --out results/ec2/E2_tier1 --reference V4
 ```
-Use the time per question from this tier to estimate tier 2 before you start it.
+Use the time per question from this tier to estimate tier 2 before you start it. Add `--ragas` to
+an `experiment run` for RAGAS metrics. It costs several extra judge calls per question, so keep it
+for tiers 0–1 or a `--limit`ed run.
 
 ### Step 9: tier 2, the main blocks E1 + E2 (RQ1, RQ2)
 ```bash
 P=configs/pipelines/cluster_gpu_7b.yaml
 for ds in nq hotpotqa musique multihop_rag graphrag_bench_medical graphrag_bench_novel; do
   uv run elevate-rag index build    $P --set dataset=$ds
-  uv run elevate-rag index validate $P --set dataset=$ds --audit-out results/ec2/${ds}_triples.csv
+  uv run elevate-rag index validate $P --set dataset=$ds
 done
 uv run elevate-rag experiment estimate configs/experiments/E1_vector_baselines.yaml --pipeline $P
 uv run elevate-rag experiment run configs/experiments/E1_vector_baselines.yaml --pipeline $P --yes
@@ -441,17 +507,20 @@ uv run elevate-rag bench vector --help         # Level A micro-benchmarks
 uv run elevate-rag experiment run configs/experiments/E4_databases_levelB.yaml --pipeline $P --yes
 ```
 
-### Step 12: copy results back and stop paying
+### Step 12: copy results back, commit them, stop paying
 ```bash
-# on your laptop:
-rsync -av ubuntu@<public-ip>:elevate-rag/results/ec2/ results/ec2/       # reports (commit these)
-rsync -av ubuntu@<public-ip>:/mnt/elevate/runs/ runs/                    # raw runs (git-ignored)
+# on your laptop, inside the repository:
+rsync -av ubuntu@<public-ip>:elevate-rag/results/ results/               # run records, calibration, reports
+rsync -av ubuntu@<public-ip>:/mnt/elevate/runs/ runs/                    # raw runs + mlflow.db (git-ignored)
+uv run elevate-rag results sync                                          # rebuild INDEX.csv, re-check judge validation
+git add results/ && git status                                           # then commit (records are small text files)
+uv run mlflow ui --backend-store-uri sqlite:///runs/mlflow.db            # optional: browse and compare runs
 ```
-**Stop the instance when it is idle.** EBS volumes, and so your data and runs, persist. Snapshot
-the data volume as a backup.
-
-Then do the human steps (§4, rows 2, 3 and 9) on the exported CSVs. No judge-based number should
-be reported until κ ≥ 0.6.
+* Each committed record names its git commit, config hash, dataset version and models, so any
+  number in the report can be traced back and re-run
+  ([results/README.md](results/README.md#tracing-a-number-back)).
+* **Stop the instance when it is idle.** EBS volumes, and so your data and runs, persist.
+* Snapshot the data volume as a backup.
 
 Running on CPU-only EC2 with API models, or using the Docker image instead of uv, is covered in
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
@@ -470,8 +539,73 @@ infrastructure/cluster/submit.sh status
 * `submit.sh experiment SPEC N` submits a job array of N shards and a report job.
 * For 24 GB GPUs, use `PIPELINE=configs/pipelines/cluster_gpu_7b.yaml` with the matching
   `GEN_MODEL`, `GEN_REVISION` and `GEN_TP=1`.
+* A job takes generator + judge + second judge GPUs (`GEN_TP + JUDGE_TP + JUDGE2_TP`).
+* The index job also calibrates the judges. The report job rebuilds the run records.
+* Copy `$ELEVATE_ROOT/results/` back into the repo's `results/`.
 * `DRY_RUN=1` prints the jobs without submitting them (`make cluster-dry`).
 * Full guide: [docs/RUNNING.md §4](docs/RUNNING.md#4-college--hpc-cluster-slurm).
+
+## 8. Team roadmap (3 days, 6 people)
+
+**Starting point (checked 2026-11-27):** lint, types and 140 tests pass, and the offline demo runs
+end to end. Evaluation is automatic: no one needs to label anything. The scaled path (§6) has not
+yet run on a real GPU, so day 1 starts by proving it.
+
+### Goals and what "done" means
+
+| Goal | Done when |
+|---|---|
+| **G-A: run at scale on EC2, outputs stored properly** | tiers 0–1 pass on EC2; E1 + E2 run on the agreed scope; every run has a committed record in `results/runs/` (git commit, config hash, models, metrics, judge status); raw runs and MLflow store are in S3; reports in `results/ec2/` are committed; the instance is stopped |
+| **G-B: music, audio and video ingestion** | `elevate-rag data ingest-media DIR --as NAME` turns clips into documents (transcript with timestamps plus technical and content details); the existing pipeline indexes them and answers questions citing clip and time; tests and a small evaluated question set |
+| **G-C: final report and presentation** | written report (problem, method, results with CIs, limitations) and slides, built only from committed results; one rehearsal done |
+
+### Roles
+
+Replace M1–M6 with names.
+
+| Member | Role | Owns |
+|---|---|---|
+| **M1** | Cloud lead | AWS quota, instance, IAM role, S3 bucket, model servers, keeping the run alive, teardown |
+| **M2** | Experiment lead | tiers 0–2, time and cost extrapolation, run scope, per-block reports |
+| **M3** | Media lead | ingestion design, audio and speech transcription, CLI, integration with the pipeline |
+| **M4** | Media engineer | video (scenes, keyframe captions) and music details, media tests, media question set |
+| **M5** | Evaluation lead | judge calibration and agreement (GroUSE, κ), RAGAS metrics, run records and MLflow, media evaluation, statistics review |
+| **M6** | Report lead | report and slides, figures, results freeze, rehearsal |
+
+
+### Before day 1 (today)
+* M1 requests the EC2 GPU quota, which can take a day to be approved (see §6 step 1).
+* M1 creates a private S3 bucket with versioning on, and an instance IAM role that can write only
+  to that bucket. No access keys go on the instance.
+* Everyone runs §5a (the offline demo) on their own machine.
+
+### Day by day
+
+| | Day 1: prove it | Day 2: run it | Day 3: finish it |
+|---|---|---|---|
+| **M1** | launch the instance, mount the volume, start the servers (§6 steps 2–6); add an S3 sync after every tier: `aws s3 sync /mnt/elevate/runs s3://<bucket>/elevate-rag/runs/` and the same for `results/` | watch the tier 2 jobs and restart after any spot reclaim (redo step 6, re-run the same command); sync every few hours | final sync; record instance type, hours and cost; snapshot the volume; **stop the instance** |
+| **M2** | tier 0 (§6 step 7), then tier 1 (step 8); from the tier 1 time per question, fix the tier 2 scope (all six datasets, or fewer / `--limit`) so it finishes within about 30 hours of wall-clock time (day 1 evening to end of day 2) | tier 2: E1 + E2 (step 9); start E3 when it ends, if time allows | per-block reports (`elevate-rag report`) into `results/ec2/`; a short write-up per block, like `results/g1_7b/G1_7B_RESULTS.md` |
+| **M3** | design the media module: `src/elevate_rag/data/media.py` produces `Document`s (`src/elevate_rag/types.py`) and writes them with `write_processed` (`data/prepare.py`); choose and pin open models (speech-to-text); add ffmpeg/ffprobe technical metadata | speech transcription with timestamps, chunked by time window; `data ingest-media` CLI; end-to-end: ingest → `index build` → `ask` with clip+time citations | integration tests; docs section in RUNNING.md; demo for the presentation |
+| **M4** | collect 10–20 clips the team owns or that are openly licensed (speech, music, video); write a 20–30 question set with gold answers and timestamps | video: scene detection and keyframe captions; music: tempo, key, duration, loudness, optional tags | unit tests with tiny generated clips (no copyrighted media in the repo); run the question set and hand results to M5 |
+| **M5** | check the tier 0 judge calibration (phi-4, Granite) and κ in the S0 records; if a judge fails GroUSE, decide with M2 whether to swap it before tier 2 | follow `judge_status` and RAGAS in `results/runs/INDEX.csv` as tier 2 runs land; a `--ragas --limit 200` run per dataset for the RAG-quality table | score the media question set with EM/F1 and both judges; check every number in the report against its run record |
+| **M6** | report outline and slide skeleton (problem → method → evaluation (official metrics, two calibrated judges, RAGAS) → results → media extension → limitations) | fill in method and G1 / model-free results; figures from the `report/` folders | add the EC2 and media results; freeze results; rehearsal with the whole team |
+
+**Checkpoints:**
+* a 15-minute sync each morning;
+* end of day 1: tier 1 numbers and the tier 2 scope agreed;
+* end of day 2: tier 2 finished or a stop decision taken; media end to end on one clip;
+* day 3 midday: results frozen, with no new runs after this.
+
+### Risks and fallbacks
+
+| Risk | Fallback |
+|---|---|
+| GPU quota not approved in time | run tiers 0–1 on the college cluster (§7), or EC2 with a single 48 GB GPU and the generator only; report what ran |
+| tier 2 too slow for the time left | `--datasets` and `--limit` to a subset chosen *before* seeing results, stated in the report |
+| spot instance reclaimed | runs resume; this is why outputs sync to S3 after every tier |
+| a judge fails GroUSE or κ below 0.6 | EM and F1 stay primary (they need no judge); judge accuracy is reported as unvalidated, with the reasons from the run record |
+| media models too heavy for laptops | run media ingestion on the EC2 GPU between tiers |
+| media rights and privacy | only clips the team owns or that are openly licensed; record each clip's licence in the dataset manifest; no clips committed to git |
 
 ## Configuration
 
@@ -508,7 +642,7 @@ src/elevate_rag/
   routing/       routers R0–R4, fallback, oracle
   generation/    context assembly (shared token budget) and the answer generator
   providers/     LLM / embedding / reranker clients, cost ledger, retries
-  evaluation/    metrics, LLM judge, harness, human-annotation tooling
+  evaluation/    metrics, two LLM judges, GroUSE calibration, RAGAS, harness
   experiments/   experiment specs → resumable, shardable runs; external-system predictions
   reporting/     tables, paired tests, figures
   cli/           the `elevate-rag` command
@@ -519,7 +653,7 @@ infrastructure/
 scripts/         run_pipeline.sh, download_models.py, model-free measurements, EC2 setup
 tests/           unit, integration (live DBs, skipped when absent), end-to-end
 docs/            requirements, architecture, decisions, progress, running, deployment
-results/         committed results with write-ups; raw runs are git-ignored
+results/         committed results with write-ups, run records (runs/), judge calibration; raw runs are git-ignored
 ```
 
 ## Development
@@ -538,7 +672,7 @@ are reported as skipped otherwise.
 
 | Document | Contents |
 |---|---|
-| [docs/RUNNING.md](docs/RUNNING.md) | every setup in detail: laptop, GPU, cluster, API, human validation, troubleshooting |
+| [docs/RUNNING.md](docs/RUNNING.md) | every setup in detail: laptop, GPU, cluster, API, evaluation and run records, troubleshooting |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | EC2 security, the Docker image, CPU-only / API deployments |
 | [results/README.md](results/README.md) | every committed result, what it shows, how it was produced |
 | [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | requirements extracted from the plan and spec |
@@ -547,7 +681,7 @@ are reported as skipped otherwise.
 | [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) | phases, gates and acceptance criteria |
 | [docs/REQUIREMENTS_TRACEABILITY.md](docs/REQUIREMENTS_TRACEABILITY.md) | requirement → code → tests → status |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | what was verified, with evidence |
-| [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) | limitations, blockers, human-dependent tasks |
+| [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) | limitations and blockers |
 
 Dataset licences are listed by `elevate-rag data list`. Large data, indexes, caches and runs are
 git-ignored.

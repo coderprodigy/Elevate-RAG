@@ -62,7 +62,8 @@ class ExperimentSpec(BaseModel):
     split: str = "test"
     limit: int | None = None
     judge: bool = True
-    llm_metrics: bool = False
+    llm_metrics: bool = False  # native RAGAS-definition metrics through the cached provider stack
+    ragas: bool = False  # the `ragas` package's metrics (local $0 judge endpoints only, D-36)
     concurrency: int = 4
     retry_failed: bool = False
 
@@ -183,6 +184,22 @@ def validate(spec: ExperimentSpec, runs: list[Run], *, check_data: bool = True) 
                     f"{tag}: judge family {m.judge.family!r} must be set and differ "
                     f"from every generator family {sorted(map(str, gen_families))}"
                 )
+            if m.judge2 is not None and (
+                m.judge2.family is None
+                or m.judge2.family in gen_families
+                or (m.judge is not None and m.judge2.family == m.judge.family)
+            ):
+                problems.append(
+                    f"{tag}: judge2 family {m.judge2.family!r} must be set and differ from the "
+                    "judge's and every generator's family"
+                )
+        if spec.ragas:
+            rj = m.judge
+            if rj is None or rj.provider != "openai-compatible" or rj.price_input_per_mtok != 0:
+                problems.append(
+                    f"{tag}: ragas: true needs models.judge to be a $0 openai-compatible server "
+                    "(RAGAS calls bypass the cost ledger)"
+                )
         if "models.extractor" in r.variant.overrides and r.dataset not in EXTRACTOR_DATASETS:
             problems.append(
                 f"{tag}: extractor comparisons are restricted to {EXTRACTOR_DATASETS} (plan, FR-X2)"
@@ -208,6 +225,7 @@ def validate(spec: ExperimentSpec, runs: list[Run], *, check_data: bool = True) 
                 m.generator,
                 m.router_llm,
                 m.judge,
+                m.judge2,
             )
             if p
             and p.provider not in FREE_PROVIDERS
@@ -256,6 +274,8 @@ def estimate(runs: list[Run]) -> dict[str, Any]:
             usd = _add(usd, _usd(m.keyword or m.extractor, 600 * n_q, 60 * n_q))
         if m.judge:
             usd = _add(usd, _usd(m.judge, 400 * n_q, 60 * n_q))
+        if m.judge2:
+            usd = _add(usd, _usd(m.judge2, 400 * n_q, 60 * n_q))
         idx_usd: float | None = 0.0
         key = f"{r.dataset}:{r.cfg.index_key()}"
         if r.needs_graph and key not in seen_index and m.extractor:
@@ -319,6 +339,8 @@ def write_manifest(
         "index_key": run.cfg.index_key(),
         "config": run.cfg.model_dump(mode="json"),
     }
+    from elevate_rag.tracking import git_info
+
     if mf.exists():
         old = json.loads(mf.read_text())
         if old["definition"]["config_hash"] != definition["config_hash"]:
@@ -328,6 +350,7 @@ def write_manifest(
         created = old["created_at"]
     else:
         created = dt.datetime.now(dt.UTC).isoformat(timespec="seconds")
+    git = git_info()  # the code that produced (this part of) the run, for the run record
     write_json(
         mf,
         {
@@ -339,6 +362,7 @@ def write_manifest(
                 "elevate_rag": __version__,
                 "python": platform.python_version(),
                 "platform": platform.platform(),
+                "git": git,
             },
             "demo": run.cfg.demo,
             **(extra or {}),
@@ -346,7 +370,31 @@ def write_manifest(
     )
 
 
-async def execute_run(run: Run, spec: ExperimentSpec, runs_root: Path) -> dict[str, Any]:
+def _record(d: Path, results_dir: Path | None, mlflow_uri: str | None, demo: bool) -> Path | None:
+    """Committed, traceable record of a completed run (skipped for demo runs)."""
+    if results_dir is None or demo:
+        return None
+    from elevate_rag.tracking import record_run
+
+    return record_run(
+        json.loads((d / "manifest.json").read_text()),
+        json.loads((d / "summary.json").read_text()),
+        d,
+        results_dir,
+        mlflow_uri=mlflow_uri,
+    )
+
+
+async def execute_run(
+    run: Run,
+    spec: ExperimentSpec,
+    runs_root: Path,
+    *,
+    results_dir: Path | None = None,
+    mlflow_uri: str | None = None,
+) -> dict[str, Any]:
+    """Run, score and summarise one run. With `results_dir`, a traceable record of the finished
+    run is written under it (`tracking.record_run`); `mlflow_uri` also logs it to MLflow."""
     from elevate_rag.evaluation.harness import (
         run_questions,
         score_rows,
@@ -365,6 +413,9 @@ async def execute_run(run: Run, spec: ExperimentSpec, runs_root: Path) -> dict[s
         and not spec.retry_failed
     ):
         log.info("skip %s (complete)", run.run_id)
+        rec = results_dir / "runs" / run.experiment / f"{run.run_id}.json" if results_dir else None
+        if rec is not None and not rec.exists():
+            _record(d, results_dir, mlflow_uri, run.cfg.demo)
         return json.loads((d / "summary.json").read_text())
     d.mkdir(parents=True, exist_ok=True)
     write_manifest(d, run, spec, "running")
@@ -419,27 +470,68 @@ async def execute_run(run: Run, spec: ExperimentSpec, runs_root: Path) -> dict[s
             if spec.judge and run.cfg.models.judge
             else None
         )
+        judge2_llm = (
+            make_llm(
+                run.cfg.models.judge2,
+                role="judge2",
+                ledger=ledger,
+                cache=system.generator_llm.cache,
+            )
+            if spec.judge and run.cfg.models.judge2
+            else None
+        )
         scored = await score_rows(
             rows,
             questions,
             system.store,
             judge_llm=judge_llm,
+            judge2_llm=judge2_llm,
             metrics_llm=judge_llm if spec.llm_metrics else None,
             concurrency=spec.concurrency,
             string_evidence_valid=ds.string_evidence_valid,
         )
+        if spec.ragas and run.cfg.models.judge:
+            from elevate_rag.evaluation.ragas_metrics import add_ragas_scores, make_ragas_metrics
+
+            scored = await add_ragas_scores(
+                scored,
+                questions,
+                system.store,
+                make_ragas_metrics(run.cfg.models.judge),
+                concurrency=spec.concurrency,
+            )
         write_scored(d / "scored.jsonl", scored)
         summary = summarize(scored)
+        summary["dataset_version"] = ds.version
+        summary["judge_validation"] = _judge_validation(run, spec, summary, results_dir)
         summary["ledger"] = ledger.summary()
         write_json(d / "summary.json", summary)
         write_json(d / "ledger.json", ledger.as_dicts())
         write_manifest(d, run, spec, "complete", {"n_questions": len(questions)})
+        _record(d, results_dir, mlflow_uri, run.cfg.demo)
         return summary
     except Exception as exc:
         write_manifest(d, run, spec, "failed", {"error": f"{type(exc).__name__}: {exc}"[:2000]})
         raise
     finally:
         await system.close()
+
+
+def _judge_validation(
+    run: Run, spec: ExperimentSpec, summary: dict[str, Any], results_dir: Path | None
+) -> dict[str, Any] | None:
+    from elevate_rag.evaluation.judge_calibration import judge_validation, load_calibration
+
+    if not spec.judge:
+        return None
+    cal_dir = results_dir / "judge_calibration" if results_dir else None
+    m = run.cfg.models
+    cals = {
+        role: load_calibration(cal_dir, cfg.model, cfg.revision)
+        for role, cfg in (("judge", m.judge), ("judge2", m.judge2))
+        if cfg is not None
+    }
+    return judge_validation(summary.get("judge_agreement"), cals)
 
 
 async def _make_router(

@@ -1,26 +1,14 @@
 from __future__ import annotations
 
-import csv
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from elevate_rag.config import GraphStoreConfig, ProviderConfig, VectorStoreConfig
-from elevate_rag.evaluation.annotation import (
-    export_failure_sample,
-    judge_agreement,
-    suggest_failure_cause,
-    triple_audit_agreement,
-)
 from elevate_rag.evaluation.harness import summarize
 from elevate_rag.experiments.runner import ExperimentSpec, Variant, estimate, expand, validate
-from elevate_rag.graph.quality import (
-    answer_entity_coverage,
-    export_triple_audit,
-    graph_shape,
-    read_labels,
-)
+from elevate_rag.graph.quality import answer_entity_coverage, graph_shape
 from elevate_rag.graph.resolution import normalize_entity, plan_merges
 from elevate_rag.indexing.chunk_store import ChunkStore
 from elevate_rag.providers.base import UsageLedger
@@ -136,38 +124,6 @@ def test_graph_shape_and_provenance_counts() -> None:
     assert (s["nodes"], s["edges"]) == (4, 2) and s["avg_degree"] == 1.0
     assert s["duplicate_rate"] == 0.5 and s["isolated_nodes"] == 1
     assert s["nodes_without_provenance"] == 1 and s["edges_without_provenance"] == 1
-
-
-def test_triple_audit_export_and_label_validation(tmp_path: Path) -> None:
-    edges = [
-        {
-            "source": f"S{i}",
-            "target": f"T{i}",
-            "keywords": "k",
-            "description": "d",
-            "chunk_ids": ["d::c0000"],
-        }
-        for i in range(80)
-    ]
-    n = export_triple_audit(edges, _store(), tmp_path / "audit.csv", n=50)
-    rows = list(csv.DictReader((tmp_path / "audit.csv").open()))
-    assert n == 50 and len(rows) == 50 and all(r["label"] == "" for r in rows)
-    assert rows[0]["evidence_text"] == "A founded B."
-    with pytest.raises(ValueError, match="invalid/missing label"):
-        read_labels(tmp_path / "audit.csv", "triple_id", ("correct",))
-    for name, labels in (
-        ("a", ["correct"] * 40 + ["wrong"] * 10),
-        ("b", ["correct"] * 38 + ["wrong"] * 12),
-    ):
-        with (tmp_path / f"{name}.csv").open("w", newline="") as fh:
-            w = csv.DictWriter(fh, fieldnames=["triple_id", "label"])
-            w.writeheader()
-            w.writerows(
-                {"triple_id": r["triple_id"], "label": lab}
-                for r, lab in zip(rows, labels, strict=True)
-            )
-    agr = triple_audit_agreement(tmp_path / "a.csv", tmp_path / "b.csv")
-    assert agr["n"] == 50 and 0.8 < agr["kappa"] < 1.0 and agr["precision_strict_a"] == 0.8
 
 
 # ------------------------------------------------------------------------------- storage
@@ -312,7 +268,7 @@ def test_estimate_flags_unknown_prices(tmp_path: Path) -> None:
     assert est["is_estimate"] and est["has_unknown_prices"]
 
 
-# ------------------------------------------------------------------------------- harness/annotation
+# ------------------------------------------------------------------------------- harness
 
 
 def _row(
@@ -382,32 +338,6 @@ def test_latency_excludes_cache_served_queries() -> None:
     assert only_cached["latency_p50_s"] is None  # unknown, never a fake ~0 s
 
 
-def test_failure_suggestions_and_export(tmp_path: Path) -> None:
-    r = _row("q1", False)
-    r["retrieved_chunk_ids"] = ["x::c0000"]
-    assert suggest_failure_cause(r, ["d1"]) == "retrieval_miss"
-    r["retrieved_chunk_ids"] = ["d1::c0000"]
-    assert suggest_failure_cause(r, ["d1"]) == "context_overload"
-    r["context_item_ids"] = ["d1::c0000"]
-    assert suggest_failure_cause(r, ["d1"]) == "generation_error"
-    r["route"] = {"level": "R1"}
-    assert suggest_failure_cause(r, ["d1"], oracle_mode="mix") == "wrong_route"
-    qs = {"q1": Question(question_id="q1", dataset="d", question="?", answers=["x"])}
-    assert export_failure_sample([_row("q1", False)], qs, tmp_path / "f.csv") == 1
-
-
-def test_judge_agreement_requires_complete_labels(tmp_path: Path) -> None:
-    sample = tmp_path / "s.csv"
-    for name in ("a", "b"):
-        with (tmp_path / f"{name}.csv").open("w", newline="") as fh:
-            w = csv.DictWriter(fh, fieldnames=["item_id", "label"])
-            w.writeheader()
-            w.writerow({"item_id": "j000|q1|v4", "label": "correct"})
-            w.writerow({"item_id": "j001|q2|v4", "label": "wrong" if name == "a" else ""})
-    with pytest.raises(ValueError):
-        judge_agreement(sample, tmp_path / "a.csv", tmp_path / "b.csv", [])
-
-
 def test_milvus_unreachable_raises_storage_error(monkeypatch: pytest.MonkeyPatch) -> None:
     pytest.importorskip("pymilvus")
     monkeypatch.setenv("ELEVATE_MILVUS_URI", "http://127.0.0.1:1")  # nothing listens here
@@ -445,40 +375,34 @@ def test_load_spec_can_retarget_pipeline_limit_and_datasets(tmp_path: Path) -> N
         load_spec(spec, datasets=["not-a-dataset"])
 
 
-def test_judge_agreement_keeps_runs_apart_and_checks_the_sample(tmp_path: Path) -> None:
-    from typing import Any
-
-    from elevate_rag.evaluation.annotation import export_judge_sample
-
-    def row(run: str, verdict: str) -> dict[str, Any]:
-        r = _row("q1", verdict == "correct")
-        r.update(run_id=run, mode="local", answer=f"answer from {run}")
-        r["scores"]["judge"] = verdict
-        return r
-
-    # a router routing q1 to `local` and the `local` variant: same question, same mode
-    scored = [row("R1-run", "correct"), row("local-run", "wrong")]
-    qs = {"q1": Question(question_id="q1", dataset="d", question="?", answers=["x"])}
-    sample = tmp_path / "sample.csv"
-    assert export_judge_sample(scored, qs, sample, n=2) == 2
-    with sample.open() as fh:
-        rows = list(csv.DictReader(fh))
-    for name in ("a", "b"):  # both annotators agree with the judge on every item
-        with (tmp_path / f"{name}.csv").open("w", newline="") as fh:
-            w = csv.DictWriter(fh, fieldnames=["item_id", "label"])
-            w.writeheader()
-            for r in rows:
-                w.writerow(
-                    {
-                        "item_id": r["item_id"],
-                        "label": "correct" if "R1-run" in r["item_id"] else "wrong",
-                    }
+def test_second_judge_and_ragas_rules(tmp_path: Path) -> None:
+    _write_pipe(tmp_path)
+    base = {r.run_id: r.cfg.config_hash() for r in expand(_spec(), tmp_path)}
+    # an unset judge2 must not change run ids (results from before judge2 keep resuming)
+    assert all(r.cfg.models.judge2 is None for r in expand(_spec(), tmp_path))
+    same = {
+        r.run_id: r.cfg.config_hash()
+        for r in expand(
+            _spec(variants=[Variant(name="V1", mode="v1"), Variant(name="local", mode="local")]),
+            tmp_path,
+        )
+    }
+    assert base == same
+    for fam, ok in (("gen", False), ("other", False), ("third", True)):
+        spec = _spec(
+            variants=[
+                Variant(
+                    name="V1",
+                    mode="v1",
+                    overrides={
+                        "models.judge2": {"provider": "offline", "model": "k", "family": fam}
+                    },
                 )
-    res = judge_agreement(sample, tmp_path / "a.csv", tmp_path / "b.csv", scored)
-    assert res["n"] == 2 and res["kappa_judge_vs_consensus"] == pytest.approx(1.0)
-    with (tmp_path / "c.csv").open("w", newline="") as fh:  # labels only one of the two items
-        w = csv.DictWriter(fh, fieldnames=["item_id", "label"])
-        w.writeheader()
-        w.writerow({"item_id": rows[0]["item_id"], "label": "correct"})
-    with pytest.raises(ValueError, match="sample"):
-        judge_agreement(sample, tmp_path / "c.csv", tmp_path / "c.csv", scored)
+            ]
+        )
+        runs = expand(spec, tmp_path)
+        assert runs[0].cfg.config_hash() not in base.values()  # judge2 is part of the identity
+        problems = validate(spec, runs, check_data=False)
+        assert any("judge2 family" in p for p in problems) is not ok
+    spec = _spec(ragas=True, variants=[Variant(name="V1", mode="v1")])
+    assert any("ragas" in p for p in validate(spec, expand(spec, tmp_path), check_data=False))

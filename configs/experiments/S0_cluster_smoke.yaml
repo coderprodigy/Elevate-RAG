@@ -10,6 +10,7 @@ pipeline: ../pipelines/cluster_gpu.yaml
 datasets: [hotpotqa_g1]
 split: all
 concurrency: 8
+ragas: true   # RAGAS metrics on the smoke tier (judge endpoint, $0)
 variants:
   - {name: V4, mode: v4}
   - {name: naive, mode: naive}
