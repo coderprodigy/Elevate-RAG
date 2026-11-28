@@ -37,8 +37,9 @@ RAGAS_KEYS = (
 )
 
 
-def make_ragas_metrics(cfg: ProviderConfig) -> dict[str, Any]:
-    """Build the four ragas metric objects on the judge endpoint."""
+def make_ragas_metrics(cfg: ProviderConfig) -> tuple[dict[str, Any], Any]:
+    """Build the four ragas metric objects on the judge endpoint. Returns (metrics, client); close
+    the client (`await client.close()`) inside the same event loop when scoring is done."""
     try:
         from openai import AsyncOpenAI
         from ragas.llms import llm_factory
@@ -62,12 +63,13 @@ def make_ragas_metrics(cfg: ProviderConfig) -> dict[str, Any]:
         max_retries=cfg.max_retries,
     )
     llm = llm_factory(cfg.model, client=client, max_tokens=2048)
-    return {
+    metrics = {
         "ragas_faithfulness": Faithfulness(llm=llm),
         "ragas_context_precision": ContextPrecision(llm=llm),
         "ragas_context_recall": ContextRecall(llm=llm),
         "ragas_answer_correctness": AnswerCorrectness(llm=llm, weights=[1.0, 0.0]),
     }
+    return metrics, client
 
 
 async def _value(coro: Any) -> float | None:

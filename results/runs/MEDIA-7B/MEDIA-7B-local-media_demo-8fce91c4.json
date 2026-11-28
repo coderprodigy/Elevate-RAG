@@ -1,0 +1,187 @@
+{
+  "record_version": 1,
+  "run_id": "MEDIA-7B-local-media_demo-8fce91c4",
+  "experiment": "MEDIA-7B",
+  "research_question": "G1",
+  "dataset": "media_demo",
+  "dataset_version": "ff03c716304d",
+  "variant": {
+    "name": "local",
+    "mode": "local",
+    "router": null,
+    "overrides": {
+      "vector_store.backend": "exact",
+      "lightrag.vector_storage": "NanoVectorDBStorage",
+      "graph_store.backend": "networkx",
+      "lightrag.graph_storage": "NetworkXStorage"
+    },
+    "tune_on_dev": false
+  },
+  "split": "all",
+  "limit": null,
+  "n": 12,
+  "config_hash": "1ea3ced18a9f5610",
+  "index_key": "d7dc7bf5817d9211",
+  "models": {
+    "embedder": {
+      "provider": "sentence-transformers",
+      "model": "BAAI/bge-small-en-v1.5",
+      "revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+      "family": "bge"
+    },
+    "reranker": {
+      "provider": "cross-encoder",
+      "model": "BAAI/bge-reranker-v2-m3",
+      "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+      "family": "bge"
+    },
+    "extractor": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "keyword": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "generator": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "router_llm": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "judge": {
+      "provider": "openai-compatible",
+      "model": "llama3.1:8b",
+      "revision": null,
+      "family": "llama"
+    }
+  },
+  "metrics": {
+    "correct": {
+      "mean": 0.6666666666666666,
+      "ci_low": 0.4166666666666667,
+      "ci_high": 0.9166666666666666,
+      "n": 12
+    },
+    "em": {
+      "mean": 0.45454545454545453,
+      "ci_low": 0.18181818181818182,
+      "ci_high": 0.7295454545454525,
+      "n": 11
+    },
+    "f1": {
+      "mean": 0.5645933014354066,
+      "ci_low": 0.29186602870813394,
+      "ci_high": 0.8181818181818182,
+      "n": 11
+    },
+    "refusal_correct": {
+      "mean": 1.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0,
+      "n": 12
+    },
+    "recall@10": {
+      "mean": 1.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0,
+      "n": 11
+    },
+    "ndcg@10": {
+      "mean": 0.9888377559398226,
+      "ci_low": 0.966513267819468,
+      "ci_high": 1.0,
+      "n": 11
+    },
+    "evidence_recall": {
+      "mean": 1.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0,
+      "n": 1
+    },
+    "ragas_answer_correctness": {
+      "mean": 0.7428571428571428,
+      "ci_low": 0.6102922077922078,
+      "ci_high": 0.8727272727272727,
+      "n": 11
+    },
+    "ragas_faithfulness": {
+      "mean": 0.6666666666666666,
+      "ci_low": 0.45454545454545453,
+      "ci_high": 0.8636363636363636,
+      "n": 11
+    },
+    "ragas_context_precision": {
+      "mean": 0.9499999999371465,
+      "ci_low": 0.8939393938778788,
+      "ci_high": 0.9999999999242802,
+      "n": 11
+    },
+    "ragas_context_recall": {
+      "mean": 0.8155844155844156,
+      "ci_low": 0.5584415584415584,
+      "ci_high": 1.0,
+      "n": 11
+    }
+  },
+  "judge_agreement": null,
+  "judge_validation": {
+    "status": "unvalidated",
+    "reasons": [
+      "judge GroUSE pass rate 0.78 < 0.8",
+      "no second judge (models.judge2) to measure agreement"
+    ],
+    "kappa": null,
+    "kappa_min": 0.6,
+    "calibration": {
+      "judge": {
+        "pass_rate": 0.7777777777777778,
+        "n": 63,
+        "calibrated": false
+      }
+    },
+    "calibration_min": 0.8
+  },
+  "efficiency": {
+    "latency_p50_s": 74.11377524863929,
+    "latency_p95_s": 104.82051844524685,
+    "latency_n": 12,
+    "cache_hit_rate": 0.0,
+    "prompt_tokens_mean": 3687.4166666666665,
+    "completion_tokens_mean": 54.583333333333336,
+    "context_tokens_mean": 1868.25,
+    "cost_per_1k_queries_usd": 0.0,
+    "cost_known": true
+  },
+  "error_rate": 0.0,
+  "refusal_rate": 0.08333333333333333,
+  "cost_usd": 0.0,
+  "code": {
+    "elevate_rag": "0.1.0",
+    "git_commit": "c0ca78150669a920381d8cb19c64db54e2ed8c72",
+    "git_branch": "nova",
+    "git_dirty": true,
+    "git_from_run": true
+  },
+  "environment": {
+    "elevate_rag": "0.1.0",
+    "python": "3.12.13",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "slurm_job_id": null
+  },
+  "created_at": "2026-11-27T17:47:59+00:00",
+  "completed_at": "2026-11-27T18:12:36+00:00",
+  "demo": false,
+  "raw_run_dir": "MEDIA-7B/MEDIA-7B-local-media_demo-8fce91c4",
+  "mlflow_run_id": null
+}

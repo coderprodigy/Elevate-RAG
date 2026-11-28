@@ -186,6 +186,111 @@ def data_synthetic(data_dir: Path = typer.Option(Path("data"), envvar="ELEVATE_D
     _echo(write_synthetic(data_dir)["counts"])
 
 
+@data_app.command("ingest-media")
+def data_ingest_media(
+    src: Path,
+    name: str = typer.Option(..., "--as", help="dataset name, e.g. media_demo"),
+    questions: Path | None = typer.Option(None, help="default: SRC/questions.jsonl"),
+    licences: Path | None = typer.Option(None, help="default: SRC/licences.csv"),
+    model: str = typer.Option("small", help="small | large-v3 | <repo>@<revision>"),
+    language: str | None = typer.Option(None, help="e.g. en; default: auto-detect per clip"),
+    window_s: float = typer.Option(60.0, help="target transcript window length (seconds)"),
+    max_window_s: float = typer.Option(90.0, help="hard maximum window length (seconds)"),
+    device: str = typer.Option("auto", help="auto | cpu | cuda"),
+    vocabulary: Path | None = typer.Option(
+        None, help="names/terms to bias transcription, one per line (default: SRC/vocabulary.txt)"
+    ),
+    music: bool = typer.Option(False, help="add tempo, key, level and content (extra `music`)"),
+    scenes: bool = typer.Option(False, help="caption each video scene (needs --captioner)"),
+    tags: bool = typer.Option(
+        False, help="genre/mood/instrument tags for music clips (CLAP; needs --music)"
+    ),
+    captioner: str | None = typer.Option(
+        None, help="vision model on an OpenAI-compatible server, e.g. qwen2.5vl:7b (Ollama)"
+    ),
+    captioner_url: str = typer.Option("http://localhost:11434/v1", help="its /v1 base URL"),
+    scene_threshold: float = typer.Option(0.12, help="frame difference that counts as a cut"),
+    min_scene_s: float = typer.Option(2.0),
+    max_scene_s: float = typer.Option(30.0),
+    data_dir: Path = typer.Option(Path("data"), envvar="ELEVATE_DATA_DIR"),
+    cache_dir: Path = typer.Option(Path("data/cache"), envvar="ELEVATE_CACHE_DIR"),
+) -> None:
+    """Transcribe audio/video clips into a dataset of timestamped transcript windows plus one
+    clip card each (docs/MEDIA_INGESTION_DESIGN.md). Needs the extra: uv sync --extra media."""
+    from elevate_rag.data.media import ingest_media, read_vocabulary
+    from elevate_rag.data.media_backends import WhisperTranscriber, probe
+
+    vocab_path = vocabulary or src / "vocabulary.txt"
+    terms = read_vocabulary(vocab_path) if vocab_path.exists() else None
+    transcriber = WhisperTranscriber(model, language=language, device=device, vocabulary=terms)
+    manifest = ingest_media(
+        src,
+        name,
+        data_dir,
+        transcriber,
+        probe,
+        questions_path=questions or src / "questions.jsonl",
+        licences_path=licences,
+        window_s=window_s,
+        max_s=max_window_s,
+        cache_dir=cache_dir,
+        progress=lambda msg: typer.echo(msg, err=True),
+        music=_music_fn() if music else None,
+        tags=_tags_fn(cache_dir) if tags else None,
+        scenes=(
+            _scene_fn(
+                captioner, captioner_url, cache_dir, scene_threshold, min_scene_s, max_scene_s
+            )
+            if scenes
+            else None
+        ),
+    )
+    _echo(
+        {
+            "dataset": name,
+            "version": manifest["version"],
+            "counts": manifest["counts"],
+            "asr": manifest["params"]["asr"],
+            "clips": [
+                {
+                    k: c[k]
+                    for k in ("file", "duration_s", "language", "windows", "transcript_cached")
+                }
+                for c in manifest["sources"]["clips"]
+            ],
+            "warnings": manifest["warnings"][:10],
+            "rejected_questions": manifest["rejected_examples"][:5],
+        }
+    )
+
+
+def _scene_fn(
+    model: str | None, url: str, cache_dir: Path, threshold: float, min_s: float, max_s: float
+) -> Any:
+    from elevate_rag.data.media_vision import VisionCaptioner, scene_fn
+
+    if not model:
+        raise typer.BadParameter("--scenes needs --captioner (a vision model), e.g. qwen2.5vl:7b")
+    return scene_fn(
+        VisionCaptioner(model, url, cache_dir=cache_dir),
+        threshold=threshold,
+        min_scene_s=min_s,
+        max_scene_s=max_s,
+    )
+
+
+def _tags_fn(cache_dir: Path) -> Any:
+    from elevate_rag.data.media_tags import tag_clips
+
+    return lambda paths: tag_clips(paths, cache_dir=cache_dir)
+
+
+def _music_fn() -> Any:
+    from elevate_rag.data.media_music import analyse
+
+    return analyse
+
+
 @data_app.command("info")
 def data_info(
     name: str, data_dir: Path = typer.Option(Path("data"), envvar="ELEVATE_DATA_DIR")

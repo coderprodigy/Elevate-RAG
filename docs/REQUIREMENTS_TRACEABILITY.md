@@ -5,7 +5,7 @@ Status legend (spec §24):
 credentials / hardware) · **PI** partially implemented · **BL** blocked (external) · **NI** not implemented.
 
 Code paths are relative to `src/elevate_rag/`. Tests: `tests/…`. Evidence for IV rows = the tests
-named (all passing: `140 passed`, live-DB tests deselected while Docker is down) and/or the real-data artefact named.
+named (all passing: `171 passed`, live-DB tests deselected while Docker is down) and/or the real-data artefact named.
 
 ## Research questions
 
@@ -29,6 +29,7 @@ named (all passing: `140 passed`, live-DB tests deselected while Docker is down)
 | FR-D5 gold never online | `Question.to_query`, `harness.run_questions` passes `Query` only | `test_offline_pipeline_never_sees_gold_fields` | IV |
 | FR-D6 UltraDomain | – | – | NI (optional) |
 | FR-D7 synthetic fixtures | `data/synthetic.py` (flagged `synthetic: true`) | used throughout | IV |
+| Team goal G-B (not in the plan): audio/video ingestion | `data/media.py`, `data/media_backends.py` (speech), `data/media_music.py`, `data/media_vision.py`, `data/media_tags.py`, `data ingest-media`, `scripts/make_media_demo.py` (D-37, D-38) | `unit/test_media.py` (CI, no extra), `integration/test_media_backends.py`, `test_media_music.py` (tempo/key on calibration signals, OpenMP isolation), `test_media_vision.py` (cuts ±0.5 s); end-to-end runs on the synthetic demo set | IV · team clips open |
 | FR-V1 chunking 512/64, sentence-aware, ablations, paragraph | `indexing/chunker.py` | `unit/test_chunking_retrieval.py` | IV |
 | FR-V2 one embedder, ID stored with vectors | `providers/embeddings.py`, index manifest `embedder.id`, `open()` rejects mismatch | `test_embedding_dimension_mismatch_is_rejected`, `test_extends_overrides_and_hashes` | IV |
 | FR-V3 HNSW params recorded/fixed | `VectorStoreConfig`, index manifest `vector_store.hnsw` | FAISS test | IV (FAISS) · IN (servers) |

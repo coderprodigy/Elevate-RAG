@@ -1,0 +1,5 @@
+experiment,variant,dataset,demo,n,em,em_ci,f1,accuracy,accuracy_ci,accuracy_judge2,judge_kappa,judge_status,recall@10,ndcg@10,refusal_correct,ragas_answer_correctness,ragas_faithfulness,ragas_context_precision,ragas_context_recall,error_rate,latency_p50_s,latency_p95_s,cache_hit_rate,prompt_tokens_mean,context_tokens_mean,cost_per_1k_queries_usd
+MEDIA-7B-V2,V4,media_demo_v2,False,16,0.6,"[0.333, 0.867]",0.6543859649122807,0.625,"[0.375, 0.875]",,,unvalidated,1.0,0.9245418310893836,0.8125,,,,,0.0,12.823447583708912,15.444978259853087,0.0,992.25,654.6875,0.0
+MEDIA-7B-V2,local,media_demo_v2,False,16,0.6666666666666666,"[0.400, 0.867]",0.7569696969696971,0.6875,"[0.438, 0.875]",,,unvalidated,1.0,0.9245418310893836,1.0,,,,,0.0,114.31738108280115,224.68328371425156,0.375,5295.5625,2864.5625,0.0
+MEDIA-7B-V2,mix,media_demo_v2,False,16,0.5333333333333333,"[0.267, 0.800]",0.68,0.625,"[0.375, 0.875]",,,unvalidated,1.0,0.9245418310893836,0.9375,,,,,0.0,,,0.6875,5781.9375,3160.5625,0.0
+MEDIA-7B-V2,naive,media_demo_v2,False,16,0.6,"[0.333, 0.867]",0.6543859649122807,0.625,"[0.375, 0.875]",,,unvalidated,1.0,0.9245418310893836,0.8125,,,,,0.0,,,1.0,992.25,654.6875,0.0

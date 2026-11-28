@@ -121,3 +121,26 @@ Severity: **B** = blocks research results · **M** = limits a requirement · **L
   `code.git_commit` is the commit that wrote the record, not the one that produced the run.
 * MLflow 3.18 warns about a deprecated SQLAlchemy loader (`noload`) when using the sqlite store;
   harmless.
+
+## Audio/video ingestion (session 8, D-37)
+
+* **Speech models misspell names they have never heard.** In the first demo run that cost 4 of
+  11 answerable questions on exact match, even though retrieval was right. `large-v3` did not fix
+  it: it misspelt the same names. A `vocabulary.txt` of the names did: `small` then spelt all six
+  correctly. Collect each clip's names with the clips. A misspelt name also splits graph
+  entities.
+* CTranslate2 4.9 offers an experimental Apple MPS backend. It is not used (CPU int8 is the
+  deterministic default on macOS).
+* The demo clips are synthetic (macOS `say`); the team's own clips and question set (design §10
+  step 4) are still to be collected.
+* Speaker diarisation and per-section music documents are not implemented (MEDIA_V2_DESIGN §3,
+  §9). Scene captions, music details and CLAP tags are (D-38).
+* **CLAP tags are unvalidated.** The only music tested was a synthetic sine-wave tune, which CLAP
+  called "pop, happy, electric guitar". Check the tags on real tracks before relying on them.
+  They are gated so that speech is never tagged.
+* Scene captions have no automatic ground truth. The demo checks them only through on-screen
+  words; caption quality on real footage is unmeasured.
+* The captioner bypasses the cost ledger (it has its own client), so it accepts local, unpriced
+  servers only.
+* A quiet beat under louder speech is reported as `speech`, not `mixed` (calibrated threshold;
+  conservative by design).

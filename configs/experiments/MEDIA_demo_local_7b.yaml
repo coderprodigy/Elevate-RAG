@@ -1,0 +1,19 @@
+id: MEDIA-7B
+question: G1
+description: >
+  End-to-end check of audio/video ingestion (docs/MEDIA_INGESTION_DESIGN.md) with mid-size local
+  models (local_7b.yaml), on the SYNTHETIC demo clips from scripts/make_media_demo.py:
+    uv run python scripts/make_media_demo.py data/raw/media_demo
+    uv run elevate-rag data ingest-media data/raw/media_demo --as media_demo --window-s 15 --max-window-s 25
+  12 questions (single-hop, cross-clip multi-hop, comparison, clip details, unanswerable). Proves
+  the pipeline on transcripts; the numbers answer no research question.
+pipeline: ../pipelines/local_7b.yaml
+datasets: [media_demo]
+split: all
+concurrency: 2
+ragas: true
+variants:
+  - {name: V4, mode: v4, overrides: &stores {vector_store.backend: exact, lightrag.vector_storage: NanoVectorDBStorage, graph_store.backend: networkx, lightrag.graph_storage: NetworkXStorage}}
+  - {name: naive, mode: naive, overrides: *stores}
+  - {name: local, mode: local, overrides: *stores}
+  - {name: mix, mode: mix, overrides: *stores}

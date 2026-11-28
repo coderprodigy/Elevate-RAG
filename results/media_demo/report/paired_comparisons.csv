@@ -1,0 +1,7 @@
+experiment,dataset,metric,variant,reference,n,diff,ci_low,ci_high,p,test,cohens_h,p_holm,significant
+MEDIA-7B,media_demo,em,local,V4,12,0.08333333333333333,-0.0730464276002019,0.23971309426686854,1.0,mcnemar_exact,0.16744807921968952,1.0,False
+MEDIA-7B,media_demo,em,mix,V4,12,0.0,0.0,0.0,1.0,mcnemar_exact,0.0,1.0,False
+MEDIA-7B,media_demo,em,naive,V4,12,0.0,0.0,0.0,1.0,mcnemar_exact,0.0,1.0,False
+MEDIA-7B,media_demo,correct,local,V4,12,0.08333333333333333,-0.0730464276002019,0.23971309426686854,1.0,mcnemar_exact,0.17238883023443252,1.0,False
+MEDIA-7B,media_demo,correct,mix,V4,12,0.0,0.0,0.0,1.0,mcnemar_exact,0.0,1.0,False
+MEDIA-7B,media_demo,correct,naive,V4,12,0.0,0.0,0.0,1.0,mcnemar_exact,0.0,1.0,False

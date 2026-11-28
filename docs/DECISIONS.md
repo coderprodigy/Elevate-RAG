@@ -335,3 +335,44 @@ from code comments and the traceability matrix.
 * **Run ids:** an unset `judge2` is left out of the config hash, so runs from before this change
   keep their ids; configs that now define `judge2` (`local_7b`, `cluster_gpu*`) get new ids
   because their evaluation definition changed.
+
+## D-37 Audio/video ingestion as a dataset loader (2026-11-27)
+
+* **Decision:** clips become an ordinary dataset (`elevate-rag data ingest-media`,
+  docs/MEDIA_INGESTION_DESIGN.md). Each clip produces timestamped transcript windows, sized to
+  stay one chunk, plus a clip card. faster-whisper 1.2.1 transcribes with a pinned CTranslate2
+  Whisper model (`small` on laptops, `large-v3` on GPUs) and deterministic settings.
+* **Why:**
+  * Retrieval, both judges, RAGAS and the run records need no change.
+  * A retrieved chunk maps to exactly one time span, so answers can cite clip and time.
+  * faster-whisper needs no system ffmpeg (PyAV bundles it), runs on CPU and CUDA, and is MIT;
+    the models are ungated and MIT.
+* **No branch:** the change is additive. The `media` extra only adds packages (checked on a copy
+  of the lockfile), and no schema, chunker, writer or config hash changes.
+* **Pins:** `av<19` (PyAV 19 removed `metadata_errors`, which faster-whisper 1.2.1 passes).
+* **Isolation:** ingestion never imports PyTorch or FAISS (a test asserts it), so the macOS
+  OpenMP clash (`utils.guard_openmp`) cannot gain a third member.
+* **Licences:** a `licences.csv` row is required for every clip and recorded in the manifest;
+  clips are never committed.
+
+## D-38 Media v2: scene captions and music details (2026-11-27)
+
+* **Decision:** `ingest-media --scenes` detects scene cuts by colour frame difference (PyAV +
+  numpy), captions each scene's middle frame through an OpenAI-compatible vision model, and adds
+  `kind: scene` documents. `--music` adds tempo, key (Krumhansl–Schmuckler on librosa chroma),
+  level, brightness and a speech / music / mixed / silence label to every clip card. Both are off
+  by default.
+* **Why:** the picture and the music become searchable with no change downstream. Gold for
+  picture questions is opt-in (`"kinds": ["scene"]`), so v1 question files keep their meaning.
+* **Captioner outside the config and the provider stack:** images are list-valued message
+  content, which the shared `BaseLLM` (token counting on strings) does not handle. A small
+  dedicated client with the existing response cache avoids changing shared code (the v1 branch
+  rule). Consequence: no cost ledger, so local unpriced servers only.
+* **Models:** laptop `granite3.2-vision:2b` (Apache-2.0, Ollama); GPU Qwen2.5-VL-7B-Instruct
+  (Apache-2.0, vLLM). Qwen2.5-VL-3B was rejected: its card states no Apache licence.
+* **Dependencies:** extra `music = ["librosa>=0.11,<1"]` (librosa 1.x needs Python 3.12; the
+  project supports 3.11), additions only. Numba is forced to its `workqueue` threading layer.
+* **Tags (v2c):** `--tags` uses CLAP (`laion/clap-htsat-fused` @ `365dea6e…`, Apache-2.0;
+  the only CLAP release with safetensors weights) in a separate process, gated by the librosa
+  content label. CLAP's own speech/music judgement was unreliable on the demo audio. The tags
+  are unvalidated on real music and are descriptive metadata only.

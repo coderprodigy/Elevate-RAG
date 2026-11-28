@@ -46,6 +46,7 @@ commit, config, data version and models.
 | `results/g1/` | Gate G1, Qwen2.5-3B + Llama-3.2-3B, 20 questions | section 2, `local_free.yaml` | ~2 h, 16 GB Apple-silicon laptop |
 | `results/g1_7b/` | Gate G1, Qwen2.5-7B + Llama-3.1-8B, same 20 questions | section 2, `local_7b.yaml` | ~4.3 h, same laptop (graph 3.2 h) |
 | `results/judge_calibration/` | GroUSE calibration of each judge model | `uv run elevate-rag judge calibrate configs/pipelines/local_7b.yaml` | ~5 min per 8B judge on a laptop |
+| `results/media_demo/` | audio/video ingestion end to end on 3 synthetic clips, 4 variants | section 7 (demo set) | ~1 h on a laptop (RAGAS scoring dominates) |
 | `results/runs/` | one record per completed run + `INDEX.csv` | written by every `experiment run`; rebuild with `uv run elevate-rag results sync` | seconds |
 | `demo_output/` (not committed) | offline pipeline demo, every number labelled DEMO | `uv run elevate-rag demo` | ~20 s |
 
@@ -255,6 +256,80 @@ uv run mlflow ui --backend-store-uri sqlite:///runs/mlflow.db   # browse runs, c
 `--results-dir` / `ELEVATE_RESULTS_DIR` moves the records (default `results/`); `--no-record`
 disables them.
 
+## 7. Audio and video datasets
+
+Turns a folder of clips into a normal dataset, so every mode, judge and metric above works on it.
+The design is in [MEDIA_INGESTION_DESIGN.md](MEDIA_INGESTION_DESIGN.md).
+
+```bash
+uv sync --locked --extra faiss --extra local-models --extra media   # PyAV bundles FFmpeg: no system ffmpeg
+# your clips: .wav .mp3 .m4a .flac .ogg .opus .aiff .mp4 .mov .mkv .webm, plus
+#   licences.csv      file,licence,source_url,notes   (one row per clip; required)
+#   questions.jsonl   {"question", "answers", "clip", "start_s", "end_s", "query_type", "evidence"?}
+#                     cross-clip: "clips" + "spans"; clip details: "card": true; "answerable": false
+#   vocabulary.txt    optional: names/terms in the clips, one per line (biases transcription; see below)
+#   references/<clip>.txt   optional checked transcript → word error rate in the manifest
+uv run elevate-rag data ingest-media clips/ --as my_media            # laptop: Whisper small (CPU, int8)
+uv run elevate-rag data ingest-media clips/ --as my_media --model large-v3   # GPU (CUDA, float16)
+uv run elevate-rag index build configs/pipelines/local_7b.yaml --set dataset=my_media
+uv run elevate-rag ask configs/pipelines/local_7b.yaml "When was the lab founded?" --set dataset=my_media
+```
+
+* Each clip becomes timestamped transcript windows (default 60 s, `--window-s`) and one clip card
+  (duration, container, codecs, tags). Answers cite e.g. `talk.wav [01:00–02:00]`.
+* Transcripts are cached per file content + model + settings in `$ELEVATE_CACHE_DIR/media/`:
+  re-running (e.g. with another `--window-s`) does not transcribe again.
+* **Put the names in `vocabulary.txt`.** Speech models misspell names they have never heard
+  (people, places, products). On the demo clips, `small` without a vocabulary misspelt all six
+  invented names, and so did `large-v3`. With the names listed, `small` got all six right and
+  word error rate fell from 6–15 % to 2–10 %. The vocabulary is part of the transcript cache key
+  and the manifest.
+* `small` and `large-v3` transcripts are different dataset versions; report numbers from one.
+* The manifest (`data/processed/<name>/manifest.json`) lists every clip's SHA-256, licence,
+  language, windows, dropped (likely hallucinated) segments, word error rate, and every file
+  skipped.
+
+**Music details and video scenes (v2, optional):**
+
+```bash
+uv sync --locked --extra faiss --extra local-models --extra media --extra music
+# tempo, key, loudness and speech/music/mixed on every clip card (librosa)
+uv run elevate-rag data ingest-media clips/ --as my_media --music
+# one captioned document per video scene, from a vision model on an OpenAI-compatible server
+ollama pull granite3.2-vision:2b      # laptop (2.4 GB); GPU: vLLM Qwen/Qwen2.5-VL-7B-Instruct
+uv run elevate-rag data ingest-media clips/ --as my_media --scenes --captioner granite3.2-vision:2b
+```
+
+* Scenes are cut where sampled frames change colour (`--scene-threshold`, `--min-scene-s`,
+  `--max-scene-s`). Each scene's middle frame is captioned (cached), and becomes a
+  `kind: scene` document such as `tour.mp4 [00:12–00:25] (scene)`.
+* A question about the picture rather than the speech marks its gold with
+  `"kinds": ["scene"]` (default: transcript windows only).
+* `--tags` (with `--music`) adds genre, mood and instrument tags to clips labelled music or mixed.
+  It uses CLAP (`laion/clap-htsat-fused`, Apache-2.0, safetensors) in a **separate process**,
+  because PyTorch must not share a process with the speech model. Only clips the music analysis
+  labels music or mixed are tagged: on speech, a closed label list still picks a confident-looking
+  genre (a talk came out "jazz, 0.88"). The tags are unvalidated on real music, so treat them as
+  descriptive metadata.
+* All flags are off by default; datasets built without them are unchanged.
+* GPU / EC2 run with `large-v3` and Qwen2.5-VL-7B: README §6 step 10b.
+
+**Demo set (macOS):** three synthetic clips (WAV, MP3 and an MP4 video) spoken with `say`, with
+exact gold time spans, then the experiment end to end:
+
+```bash
+uv run python scripts/make_media_demo.py data/raw/media_demo     # also writes vocabulary.txt
+uv run elevate-rag data ingest-media data/raw/media_demo --as media_demo --window-s 15 --max-window-s 25
+# with scenes and music (needs granite3.2-vision:2b and the `music` extra):
+uv run elevate-rag data ingest-media data/raw/media_demo --as media_demo_v2 --window-s 15 \
+  --max-window-s 25 --music --scenes --captioner granite3.2-vision:2b \
+  --questions data/raw/media_demo/questions_v2.jsonl
+scripts/run_pipeline.sh configs/pipelines/local_7b.yaml configs/experiments/MEDIA_demo_local_7b.yaml \
+  media_demo results/media_demo \
+  --set vector_store.backend=exact --set lightrag.vector_storage=NanoVectorDBStorage \
+  --set graph_store.backend=networkx --set lightrag.graph_storage=NetworkXStorage
+```
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
@@ -269,3 +344,6 @@ disables them.
 | `environment variable … is not set` | config needs `ELEVATE_GEN_URL` etc. | start the model servers / export the URL |
 | `judge_status: unvalidated` in a report | a judge is uncalibrated, failed GroUSE, or κ < 0.6 | read `judge_validation.reasons` in the run record; run `judge calibrate`; cite EM/F1 |
 | `No module named 'ragas'` / `'mlflow'` | optional extras missing | `uv sync --locked --extra ragas --extra tracking` (plus your other extras) |
+| `media ingestion needs the extra` | `media` extra missing | `uv sync --locked --extra media` (plus your other extras) |
+| `clip(s) without a licence row` | a clip has no row in `licences.csv` | add `file,licence,source_url,notes` for it |
+| names misspelt in transcripts | the model has never heard them (a larger model does not fix it) | list them in `vocabulary.txt`; check `wer_vs_reference` |

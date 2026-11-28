@@ -1,0 +1,7 @@
+experiment,dataset,metric,variant,reference,n,diff,ci_low,ci_high,p,test,cohens_h,p_holm,significant
+MEDIA-7B-VOCAB,media_demo_vocab,em,local,V4,12,0.0,0.0,0.0,1.0,mcnemar_exact,0.0,1.0,False
+MEDIA-7B-VOCAB,media_demo_vocab,em,mix,V4,12,0.0,0.0,0.0,1.0,mcnemar_exact,0.0,1.0,False
+MEDIA-7B-VOCAB,media_demo_vocab,em,naive,V4,12,0.0,0.0,0.0,1.0,mcnemar_exact,0.0,1.0,False
+MEDIA-7B-VOCAB,media_demo_vocab,correct,local,V4,12,0.0,0.0,0.0,1.0,mcnemar_exact,0.0,1.0,False
+MEDIA-7B-VOCAB,media_demo_vocab,correct,mix,V4,12,0.0,0.0,0.0,1.0,mcnemar_exact,0.0,1.0,False
+MEDIA-7B-VOCAB,media_demo_vocab,correct,naive,V4,12,0.0,0.0,0.0,1.0,mcnemar_exact,0.0,1.0,False

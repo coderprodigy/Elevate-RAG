@@ -159,3 +159,74 @@ Workspace `Elevate-RAG-nova`, branch `nova`. **Nothing committed or pushed** (us
   `<0.4` in the `ragas` extra.
 * Checks: ruff + format clean, mypy clean (55 files), **140 passed** (live-DB tests deselected
   while Docker is broken).
+
+## Session 8 (2026-11-27): audio/video ingestion v1 (D-37)
+
+* `elevate-rag data ingest-media` turns a folder of clips into a normal dataset:
+  * faster-whisper 1.2.1, pinned Whisper `small` / `large-v3`, deterministic settings;
+  * timestamped transcript windows, one chunk each, plus a clip card;
+  * licences required; transcripts cached;
+  * time spans mapped to gold windows; word error rate against optional reference transcripts.
+  Design: `docs/MEDIA_INGESTION_DESIGN.md`; how to run: RUNNING.md §7.
+* **Nothing existing changed.** The `media` extra only adds packages (`faster-whisper`,
+  `ctranslate2`, `av`, `onnxruntime`, `flatbuffers`), and no schema, chunker, writer or config
+  hash changed. Ingestion never loads PyTorch or FAISS (tested).
+* **Found while building:**
+  * PyAV 19 is incompatible with faster-whisper 1.2.1 (`metadata_errors`) → `av<19` pinned;
+  * a long segment was repeated as a whole extra window → overlap only when short;
+  * a missing extra gave a raw import error → clear message;
+  * cards showed raw FFmpeg names ("mov,mp4,…", "mp3float") → normalised;
+  * reference transcripts with spelled-out numbers inflated word error rate → written form.
+* **Verified live:**
+  * Whisper `small` on CPU transcribed a generated sentence exactly.
+  * The synthetic demo set (3 clips: WAV, MP3, MP4 video; 12 questions with exact time spans)
+    ingests in 14 s: 9 documents, 12 questions, none rejected, evidence 100 % verbatim, word
+    error rate 6–15 %. All errors are misspelt invented names ("Wellmora", "Donhold").
+  * Re-ingesting hit the transcript cache.
+* Checks: ruff + format clean, mypy clean (57 files), **153 passed**, 86 % coverage; the media
+  tests also pass in a CI-like environment without the extra (backend tests skipped).
+
+## Session 9 (2026-11-27): media experiments, vocabulary hint, media v2 (D-38)
+
+* **Media demo, end to end** (`results/media_demo/MEDIA_DEMO_RESULTS.md`):
+  * 3 synthetic clips, 12 questions, local 7B models, 4 modes.
+  * Without a vocabulary, EM was 0.36–0.45, with 4 of 11 answers lost to misspelt names
+    although retrieval was right.
+  * Whisper `large-v3` misspelt the same names. A `vocabulary.txt` (`hotwords`) fixed all six,
+    and EM rose to **0.82** in every mode.
+  * The remaining errors are the 7B generator's reasoning.
+* **Media v2 implemented** (`docs/MEDIA_V2_DESIGN.md`, D-38):
+  * `--scenes`: colour-difference cut detection (PyAV + numpy); keyframes; captions through an
+    OpenAI-compatible vision model (laptop: `granite3.2-vision:2b`; GPU: Qwen2.5-VL-7B);
+    `kind: scene` documents; picture questions opt in with `"kinds": ["scene"]`.
+  * `--music`: tempo, key (Krumhansl–Schmuckler), level, brightness and a speech / music /
+    mixed / silence label on the clip card (librosa 0.11, extra `music`).
+* **Calibration and checks:**
+  * Tempo is within ±3 BPM on 90/120/150 BPM click tracks, and keys are right on A minor and
+    C major progressions (confidence > 0.9).
+  * The cuts in a generated video are found within ±0.5 s.
+  * No OpenMP runtime is loaded on the media path; the check detects PyTorch's `libomp` as a
+    positive control.
+* **Live, laptop:**
+  * The 2B vision model read the on-screen words in 3 of 6 demo scenes and invented people on
+    plain title cards. It is the laptop fallback only.
+  * Speech clips were labelled `speech` with key "unclear", as they should be.
+* **Fixed:**
+  * the RAGAS client closed after its event loop ended;
+  * grey-level cut detection missed colour cuts;
+  * a key was reported for drums-only audio.
+* **Disk:** removed the 3B Ollama models and Whisper `large-v3` (about 7 GB, owner's go-ahead);
+  pulled `granite3.2-vision:2b` (2.4 GB).
+* **v2c tags** (`--tags`): CLAP zero-shot genre / mood / instrument in a separate process,
+  gated by the librosa content label. CLAP's own gate failed on the demo (instrumental →
+  "noise", talk → "music"), and ungated tags called a talk "jazz 0.88".
+* **Media on the GPU:** README §6 step 10b (Whisper `large-v3` with cuBLAS 12 / cuDNN 9,
+  Qwen2.5-VL-7B through vLLM, then experiments with `--datasets team_media`).
+* **Run 3 (media v2, 16 questions):**
+  * The key question was answered right in every mode, and tempo came out 117.5 against 120.
+  * Picture questions scored 0 of 2: the 2B captioner never read those cards.
+  * The extra scene documents cost one speech answer in three modes.
+* **Test fix:** a tag test imported PyTorch into the pytest process, so a later FAISS test
+  tripped the OpenMP guard. It now checks for the packages without importing them.
+* Checks: ruff + format clean, mypy clean (60 files), **171 passed**; `uv lock --check` OK. The
+  media, music and tags extras only add packages to the lockfile.

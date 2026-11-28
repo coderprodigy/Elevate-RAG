@@ -1,0 +1,163 @@
+{
+  "record_version": 1,
+  "run_id": "MEDIA-7B-V2-naive-media_demo_v2-f2c06715",
+  "experiment": "MEDIA-7B-V2",
+  "research_question": "G1",
+  "dataset": "media_demo_v2",
+  "dataset_version": "77dd60265026",
+  "variant": {
+    "name": "naive",
+    "mode": "naive",
+    "router": null,
+    "overrides": {
+      "vector_store.backend": "exact",
+      "lightrag.vector_storage": "NanoVectorDBStorage",
+      "graph_store.backend": "networkx",
+      "lightrag.graph_storage": "NetworkXStorage"
+    },
+    "tune_on_dev": false
+  },
+  "split": "all",
+  "limit": null,
+  "n": 16,
+  "config_hash": "de763656025ba15a",
+  "index_key": "bf2c13413c4723c5",
+  "models": {
+    "embedder": {
+      "provider": "sentence-transformers",
+      "model": "BAAI/bge-small-en-v1.5",
+      "revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+      "family": "bge"
+    },
+    "reranker": {
+      "provider": "cross-encoder",
+      "model": "BAAI/bge-reranker-v2-m3",
+      "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+      "family": "bge"
+    },
+    "extractor": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "keyword": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "generator": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "router_llm": {
+      "provider": "openai-compatible",
+      "model": "qwen2.5:7b-instruct",
+      "revision": null,
+      "family": "qwen"
+    },
+    "judge": {
+      "provider": "openai-compatible",
+      "model": "llama3.1:8b",
+      "revision": null,
+      "family": "llama"
+    }
+  },
+  "metrics": {
+    "correct": {
+      "mean": 0.625,
+      "ci_low": 0.375,
+      "ci_high": 0.875,
+      "n": 16
+    },
+    "em": {
+      "mean": 0.6,
+      "ci_low": 0.3333333333333333,
+      "ci_high": 0.8666666666666667,
+      "n": 15
+    },
+    "f1": {
+      "mean": 0.6543859649122807,
+      "ci_low": 0.42960526315789477,
+      "ci_high": 0.8666666666666667,
+      "n": 15
+    },
+    "refusal_correct": {
+      "mean": 0.8125,
+      "ci_low": 0.625,
+      "ci_high": 1.0,
+      "n": 16
+    },
+    "recall@10": {
+      "mean": 1.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0,
+      "n": 15
+    },
+    "ndcg@10": {
+      "mean": 0.9245418310893836,
+      "ci_low": 0.8281611952564361,
+      "ci_high": 1.0,
+      "n": 15
+    },
+    "evidence_recall": {
+      "mean": 1.0,
+      "ci_low": 1.0,
+      "ci_high": 1.0,
+      "n": 1
+    }
+  },
+  "judge_agreement": null,
+  "judge_validation": {
+    "status": "unvalidated",
+    "reasons": [
+      "judge GroUSE pass rate 0.78 < 0.8",
+      "no second judge (models.judge2) to measure agreement"
+    ],
+    "kappa": null,
+    "kappa_min": 0.6,
+    "calibration": {
+      "judge": {
+        "pass_rate": 0.7777777777777778,
+        "n": 63,
+        "calibrated": false
+      }
+    },
+    "calibration_min": 0.8
+  },
+  "efficiency": {
+    "latency_p50_s": null,
+    "latency_p95_s": null,
+    "latency_n": 0,
+    "cache_hit_rate": 1.0,
+    "prompt_tokens_mean": 992.25,
+    "completion_tokens_mean": 13.625,
+    "context_tokens_mean": 654.6875,
+    "cost_per_1k_queries_usd": 0.0,
+    "cost_known": true
+  },
+  "error_rate": 0.0,
+  "refusal_rate": 0.25,
+  "cost_usd": 0.0,
+  "code": {
+    "elevate_rag": "0.1.0",
+    "git_commit": "c0ca78150669a920381d8cb19c64db54e2ed8c72",
+    "git_branch": "nova",
+    "git_dirty": true,
+    "git_from_run": true
+  },
+  "environment": {
+    "elevate_rag": "0.1.0",
+    "python": "3.12.13",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "slurm_job_id": null
+  },
+  "created_at": "2026-11-27T21:22:49+00:00",
+  "completed_at": "2026-11-27T21:23:05+00:00",
+  "demo": false,
+  "raw_run_dir": "MEDIA-7B-V2/MEDIA-7B-V2-naive-media_demo_v2-f2c06715",
+  "mlflow_run_id": null
+}

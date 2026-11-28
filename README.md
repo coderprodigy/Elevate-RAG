@@ -5,7 +5,7 @@ choose between them**, built from *Hybrid Vector + Graph RAG: Project Design & E
 and the *Elevate-RAG Master Implementation Specification*.
 
 > **Status (2026-11-27)**
-> * **Done:** the software is built and tested (140 tests, 85 % coverage). Seven datasets are
+> * **Done:** the software is built and tested (171 tests). Seven datasets are
 >   prepared from pinned versions. Model-free baselines are measured. The first end-to-end gate
 >   (G1) passed with free local models, at 3B and at 7B/8B size.
 > * **Evaluation is fully automatic** (no human annotators):
@@ -16,6 +16,14 @@ and the *Elevate-RAG Master Implementation Specification*.
 >
 >   Every run writes a traceable record to [`results/runs/`](results/runs/INDEX.csv), and can
 >   also be logged to MLflow.
+>   ([design](docs/MEDIA_INGESTION_DESIGN.md), [RUNNING §7](docs/RUNNING.md#7-audio-and-video-datasets)):
+>   * **v1, speech:** `elevate-rag data ingest-media` turns clips into a normal dataset of
+>     timestamped transcripts (faster-whisper, pinned Whisper model, no system ffmpeg needed).
+>     A name vocabulary fixes misspelt names.
+>   * **v2, picture and music:** video scene captions (`--scenes`, a vision model) and music
+>     details (`--music`: tempo, key, level).
+>
+>   Both are tested and run end to end on a synthetic demo set.
 > * **Not done:** the research experiments E1–E6 and A1–A4. They need GPU time (EC2 or the
 >   college cluster).
 > * **Untested:** the EC2 and cluster scripts are ready but have **not yet run on a real GPU
@@ -77,8 +85,8 @@ the retrieval mode changes, so differences can be attributed to it.
 * Every requirement from the plan and the spec was extracted with a stable ID:
   [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md), mapped to code and tests in
   [docs/REQUIREMENTS_TRACEABILITY.md](docs/REQUIREMENTS_TRACEABILITY.md).
-* 36 design decisions are recorded with rationale and alternatives:
-  [docs/DECISIONS.md](docs/DECISIONS.md) (D-01 to D-36).
+* 38 design decisions are recorded with rationale and alternatives:
+  [docs/DECISIONS.md](docs/DECISIONS.md) (D-01 to D-38).
 * LightRAG 1.5.7's API was verified against the installed package before being used.
 
 ### Step 2: reproducible environment
@@ -208,7 +216,39 @@ Every completed run writes `results/runs/<experiment>/<run_id>.json` and a line 
 Runs can also be logged to MLflow (`--mlflow`). How to trace a number back:
 [results/README.md](results/README.md#tracing-a-number-back).
 
-### Step 14: scale-out
+### Step 14: audio and video ingestion (D-37)
+`elevate-rag data ingest-media clips/ --as NAME` turns a folder of clips (WAV, MP3, M4A, FLAC,
+MP4, MOV, MKV, …) into an ordinary dataset:
+* **Transcription:** faster-whisper with a pinned, MIT-licensed Whisper model (`small` on
+  laptops, `large-v3` on GPUs) and deterministic settings.
+* **Documents:** each clip becomes timestamped transcript windows, sized so one window is one
+  search chunk, plus a clip card (duration, container, codecs, tags). Answers cite "clip [01:00–02:00]".
+* **Gold answers:** questions carry clip time spans, which are mapped to gold windows
+  automatically.
+* **Rights:** every clip needs a licence row.
+* **Caching:** transcripts are cached.
+* **Safety:** nothing existing changed. The new `media` extra only adds packages.
+
+`scripts/make_media_demo.py` makes a synthetic three-clip demo set (macOS `say`) with exact gold
+time spans.
+
+**Two more stages and one fix (D-38):**
+* **v2a, picture:** `--scenes` cuts videos into scenes by colour change and captions each scene's
+  middle frame with an open vision model (Granite Vision 2B on a laptop, Qwen2.5-VL-7B on a GPU).
+* **v2b, music:** `--music` adds tempo, key, level and a speech/music/mixed label to each clip
+  card. On calibration signals, tempo was within ±3 BPM and key detection was right.
+* **v2c, tags:** `--tags` adds genre, mood and instrument tags (CLAP, run in a separate process)
+  to clips labelled music. They are unvalidated on real music.
+* **Vocabulary hint:** a `vocabulary.txt` of the names in the clips fixed the misspelt names.
+  That took exact match on the demo from 0.36 to 0.82, and a bigger speech model did not help.
+
+Results, including picture and music questions:
+[results/media_demo/](results/media_demo/MEDIA_DEMO_RESULTS.md).
+* **Music:** the key question was answered right in every mode.
+* **Picture:** the 2B laptop captioner was too weak for the on-screen-text questions, so the GPU
+  run uses Qwen2.5-VL-7B (§6 step 10b).
+
+### Step 15: scale-out
 Configs and scripts now cover three settings:
 * GPU servers: `cluster_gpu.yaml`, `cluster_gpu_7b.yaml`;
 * a SLURM cluster: [infrastructure/cluster/](infrastructure/cluster/);
@@ -261,8 +301,9 @@ Details: [results/README.md](results/README.md), per-run records in
 | 6 | **E3** routers: dev labels → train R2 → test (RQ3) | GPU | §6 step 10 |
 | 7 | **E5, E6, A1–A4**: model factors, generator size, ablations (RQ5) | GPU; some variants name API models and need a budget | §6 step 10 |
 | 8 | **E4** databases: start Milvus, pgvector, Memgraph and run the DB tests (RQ4) | Docker on EC2 | §6 step 11 |
-| 9 | Final report: `elevate-rag report` per block, then freeze results (gate G4) | – | – |
-| 10 | Housekeeping: choose the LICENSE holder; restart Docker Desktop on the laptop | owner | – |
+| 9 | **Media question set:** 10–20 clips the team owns or that are openly licensed, plus `questions.jsonl`; ingest with `large-v3` | M4 + GPU | [RUNNING §7](docs/RUNNING.md#7-audio-and-video-datasets) |
+| 10 | Final report: `elevate-rag report` per block, then freeze results (gate G4) | – | – |
+| 11 | Housekeeping: choose the LICENSE holder; restart Docker Desktop on the laptop | owner | – |
 
 Deliberately left out or partial (with reasons in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)):
 * the LlamaIndex extractor fallback;
@@ -498,6 +539,42 @@ uv run elevate-rag report --experiment A  --out results/ec2/A  --reference refer
   `--only` (it keeps runs whose id contains the text), e.g.
   `experiment run configs/experiments/E5_model_factors.yaml --pipeline $P --only emb-bge-small --yes`.
 
+### Step 10b: the team's audio/video set on the GPU
+Clips, `licences.csv`, `vocabulary.txt` and `questions.jsonl` go in one folder (format:
+[RUNNING §7](docs/RUNNING.md#7-audio-and-video-datasets)). Copy it to the instance, for example
+`rsync -av clips/ ubuntu@<public-ip>:/mnt/elevate/clips/`. Ingestion is a one-off preprocessing
+step. Run it while the step 6 servers are **stopped**, because the vision model needs a GPU of its
+own.
+
+```bash
+uv sync --locked --extra faiss --extra local-models --extra media --extra music
+# GPU Whisper (CTranslate2 4.x) needs cuBLAS 12 + cuDNN 9; skip if the AMI already has them.
+# (a later `uv sync` removes these two again; reinstall before the next media run)
+uv pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"
+export LD_LIBRARY_PATH=$(uv run python -c 'import os, nvidia.cublas.lib, nvidia.cudnn.lib; print(os.path.dirname(nvidia.cublas.lib.__file__) + ":" + os.path.dirname(nvidia.cudnn.lib.__file__))')
+pkill -f "vllm serve" || true                                # free the GPUs
+
+# vision model for scene captions (Apache-2.0, 16.6 GB)
+CUDA_VISIBLE_DEVICES=0 nohup .venv-vllm/bin/vllm serve Qwen/Qwen2.5-VL-7B-Instruct \
+  --revision cc594898137f460bfe9f0759e9844b3ce807cfb5 --served-model-name Qwen/Qwen2.5-VL-7B-Instruct \
+  --host 127.0.0.1 --port 8003 --max-model-len 16384 --seed 0 > "$ELEVATE_RUNS_DIR/logs/vllm-vlm.log" 2>&1 &
+until curl -sf localhost:8003/v1/models >/dev/null; do sleep 15; done
+
+CUDA_VISIBLE_DEVICES=1 uv run elevate-rag data ingest-media /mnt/elevate/clips --as team_media \
+  --model large-v3 --music --tags \
+  --scenes --captioner Qwen/Qwen2.5-VL-7B-Instruct --captioner-url http://127.0.0.1:8003/v1
+pkill -f "vllm serve"                                        # then redo step 6 and run experiments:
+uv run elevate-rag experiment run configs/experiments/MEDIA_demo_local_7b.yaml \
+  --pipeline configs/pipelines/cluster_gpu_7b.yaml --datasets team_media --yes
+```
+
+* `--model large-v3` is the GPU Whisper model (float16).
+* `--tags` adds genre / mood / instrument tags to music clips. It runs CLAP in a separate process
+  and needs `--music`.
+* The demo spec's variants (V4, naive, local, mix) work for any media dataset via `--datasets`.
+* `data/processed/team_media/manifest.json` records every clip's checksum, licence, language,
+  word error rate (if `references/` exist), music details and scene count.
+
 ### Step 11: E4 databases (RQ4, needs Docker)
 ```bash
 docker --version || { bash scripts/ec2_setup.sh && newgrp docker; }   # the GPU AMI usually has Docker
@@ -547,7 +624,7 @@ infrastructure/cluster/submit.sh status
 
 ## 8. Team roadmap (3 days, 6 people)
 
-**Starting point (checked 2026-11-27):** lint, types and 140 tests pass, and the offline demo runs
+**Starting point (checked 2026-11-27):** lint, types and 171 tests pass, and the offline demo runs
 end to end. Evaluation is automatic: no one needs to label anything. The scaled path (§6) has not
 yet run on a real GPU, so day 1 starts by proving it.
 
@@ -556,7 +633,7 @@ yet run on a real GPU, so day 1 starts by proving it.
 | Goal | Done when |
 |---|---|
 | **G-A: run at scale on EC2, outputs stored properly** | tiers 0–1 pass on EC2; E1 + E2 run on the agreed scope; every run has a committed record in `results/runs/` (git commit, config hash, models, metrics, judge status); raw runs and MLflow store are in S3; reports in `results/ec2/` are committed; the instance is stopped |
-| **G-B: music, audio and video ingestion** | `elevate-rag data ingest-media DIR --as NAME` turns clips into documents (transcript with timestamps plus technical and content details); the existing pipeline indexes them and answers questions citing clip and time; tests and a small evaluated question set |
+| **G-B: music, audio and video ingestion** | **built and tested**: speech (v1), video scene captions and music details (v2). Still open: the team's own clips, names vocabulary and question set; results on the GPU models |
 | **G-C: final report and presentation** | written report (problem, method, results with CIs, limitations) and slides, built only from committed results; one rehearsal done |
 
 ### Roles
@@ -585,7 +662,7 @@ Replace M1–M6 with names.
 |---|---|---|---|
 | **M1** | launch the instance, mount the volume, start the servers (§6 steps 2–6); add an S3 sync after every tier: `aws s3 sync /mnt/elevate/runs s3://<bucket>/elevate-rag/runs/` and the same for `results/` | watch the tier 2 jobs and restart after any spot reclaim (redo step 6, re-run the same command); sync every few hours | final sync; record instance type, hours and cost; snapshot the volume; **stop the instance** |
 | **M2** | tier 0 (§6 step 7), then tier 1 (step 8); from the tier 1 time per question, fix the tier 2 scope (all six datasets, or fewer / `--limit`) so it finishes within about 30 hours of wall-clock time (day 1 evening to end of day 2) | tier 2: E1 + E2 (step 9); start E3 when it ends, if time allows | per-block reports (`elevate-rag report`) into `results/ec2/`; a short write-up per block, like `results/g1_7b/G1_7B_RESULTS.md` |
-| **M3** | design the media module: `src/elevate_rag/data/media.py` produces `Document`s (`src/elevate_rag/types.py`) and writes them with `write_processed` (`data/prepare.py`); choose and pin open models (speech-to-text); add ffmpeg/ffprobe technical metadata | speech transcription with timestamps, chunked by time window; `data ingest-media` CLI; end-to-end: ingest → `index build` → `ask` with clip+time citations | integration tests; docs section in RUNNING.md; demo for the presentation |
+| **M3** | ingestion v1 is built ([design](docs/MEDIA_INGESTION_DESIGN.md)); ingest the team's clips (from M4) with `--model large-v3` on the EC2 GPU; tune `--window-s` (30/60/90) on the dev split | run the `MEDIA_demo_local_7b`-style experiment on the team's media set; start the v2 design (video scene captions, design §11) | media results write-up; live demo for the presentation (`ask` citing clip + time) |
 | **M4** | collect 10–20 clips the team owns or that are openly licensed (speech, music, video); write a 20–30 question set with gold answers and timestamps | video: scene detection and keyframe captions; music: tempo, key, duration, loudness, optional tags | unit tests with tiny generated clips (no copyrighted media in the repo); run the question set and hand results to M5 |
 | **M5** | check the tier 0 judge calibration (phi-4, Granite) and κ in the S0 records; if a judge fails GroUSE, decide with M2 whether to swap it before tier 2 | follow `judge_status` and RAGAS in `results/runs/INDEX.csv` as tier 2 runs land; a `--ragas --limit 200` run per dataset for the RAG-quality table | score the media question set with EM/F1 and both judges; check every number in the report against its run record |
 | **M6** | report outline and slide skeleton (problem → method → evaluation (official metrics, two calibrated judges, RAGAS) → results → media extension → limitations) | fill in method and G1 / model-free results; figures from the `report/` folders | add the EC2 and media results; freeze results; rehearsal with the whole team |
@@ -633,7 +710,8 @@ Replace M1–M6 with names.
 
 ```
 src/elevate_rag/
-  data/          dataset loaders (pinned revisions), preparation, splits, synthetic corpus
+  data/          dataset loaders (pinned revisions), preparation, splits, synthetic corpus,
+                 audio/video ingestion (media.py; backends: speech, music, vision)
   indexing/      chunking and the shared chunk store
   retrieval/     BM25 and rank fusion
   graph/         LightRAG engine, entity resolution, graph quality, communities
@@ -650,7 +728,7 @@ configs/         pipeline and experiment YAML
 infrastructure/
   docker/        docker-compose for the databases (Qdrant, Neo4j, Milvus, pgvector, Memgraph)
   cluster/       SLURM jobs, vLLM start-up, Apptainer image definition, site settings (env.sh)
-scripts/         run_pipeline.sh, download_models.py, model-free measurements, EC2 setup
+scripts/         run_pipeline.sh, download_models.py, model-free measurements, EC2 setup, media demo
 tests/           unit, integration (live DBs, skipped when absent), end-to-end
 docs/            requirements, architecture, decisions, progress, running, deployment
 results/         committed results with write-ups, run records (runs/), judge calibration; raw runs are git-ignored
@@ -674,6 +752,8 @@ are reported as skipped otherwise.
 |---|---|
 | [docs/RUNNING.md](docs/RUNNING.md) | every setup in detail: laptop, GPU, cluster, API, evaluation and run records, troubleshooting |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | EC2 security, the Docker image, CPU-only / API deployments |
+| [docs/MEDIA_INGESTION_DESIGN.md](docs/MEDIA_INGESTION_DESIGN.md) | audio/video speech-to-text ingestion: design, status, extension points |
+| [docs/MEDIA_V2_DESIGN.md](docs/MEDIA_V2_DESIGN.md) | media v2: video scene captions and music details (implemented; differences from the design listed) |
 | [results/README.md](results/README.md) | every committed result, what it shows, how it was produced |
 | [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | requirements extracted from the plan and spec |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | components, invariants, data flow |

@@ -36,6 +36,10 @@ neo4j = ["neo4j>=5.25"]
 ragas = ["ragas>=0.4.3,<0.5", "langchain-community<0.4"]  # 0.4 dropped a module ragas 0.4.3 imports
 # Experiment tracking: every run logged to MLflow (local store, `mlflow ui` to browse).
 tracking = ["mlflow>=3.17,<4"]
+# Audio/video speech-to-text ingestion (`data ingest-media`; PyAV bundles FFmpeg).
+media = ["faster-whisper>=1.2.1,<2", "av<19"]  # av 19 removed `metadata_errors`, which faster-whisper 1.2.1 passes
+# Music details for `ingest-media --music` (tempo, key, loudness). librosa 1.x needs Python 3.12.
+music = ["librosa>=0.11,<1"]
 langfuse = ["langfuse>=3.8"]
 databases = ["elevate-rag[qdrant,milvus,postgres,faiss,neo4j]"]
 

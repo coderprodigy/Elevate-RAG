@@ -493,13 +493,13 @@ async def execute_run(
         if spec.ragas and run.cfg.models.judge:
             from elevate_rag.evaluation.ragas_metrics import add_ragas_scores, make_ragas_metrics
 
-            scored = await add_ragas_scores(
-                scored,
-                questions,
-                system.store,
-                make_ragas_metrics(run.cfg.models.judge),
-                concurrency=spec.concurrency,
-            )
+            metrics, client = make_ragas_metrics(run.cfg.models.judge)
+            try:
+                scored = await add_ragas_scores(
+                    scored, questions, system.store, metrics, concurrency=spec.concurrency
+                )
+            finally:  # close inside this event loop, not at garbage collection after it ends
+                await client.close()
         write_scored(d / "scored.jsonl", scored)
         summary = summarize(scored)
         summary["dataset_version"] = ds.version
